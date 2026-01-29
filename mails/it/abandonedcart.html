@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nuovo carrello abbandonato</title>
+</head>
+<body style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
+    <p>È stato rilevato un nuovo carrello abbandonato.</p>
+
+    <h3 style="color: #555;">DETTAGLI CLIENTE:</h3>
+    <ul>
+        <li><strong>ID Cliente:</strong> {id_customer}</li>
+        <li><strong>Nome:</strong> {firstname} {lastname}</li>
+        <li><strong>Email:</strong> {customer_email}</li>
+    </ul>
+
+    <h3 style="color: #555;">DETTAGLI CARRELLO:</h3>
+    <ul>
+        <li><strong>ID Carrello:</strong> {id_cart}</li>
+        <li><strong>Data abbandono:</strong> {date_upd}</li>
+        <li><strong>Valore totale:</strong> {total_amount}</li>
+    </ul>
+
+    <h3 style="color: #555;">PRODOTTI NEL CARRELLO:</h3>
+    <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">{product_list}</pre>
+
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+    <p style="color: #888; font-size: 12px;">Questa è una notifica automatica generata dal sistema.</p>
+</body>
+</html>

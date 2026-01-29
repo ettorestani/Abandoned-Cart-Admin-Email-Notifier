@@ -1,0 +1,17 @@
+È stato rilevato un nuovo carrello abbandonato.
+
+DETTAGLI CLIENTE:
+- ID Cliente: {id_customer}
+- Nome: {firstname} {lastname}
+- Email: {customer_email}
+
+DETTAGLI CARRELLO:
+- ID Carrello: {id_cart}
+- Data abbandono: {date_upd}
+- Valore totale: {total_amount}
+
+PRODOTTI NEL CARRELLO:
+{product_list}
+
+---
+Questa è una notifica automatica generata dal sistema.
