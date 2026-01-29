@@ -2,7 +2,7 @@
 
 [![Support via PayPal](https://img.shields.io/badge/Support-PayPal-blue?logo=paypal)](https://www.paypal.com/paypalme/ettorestani)
 [![PrestaShop](https://img.shields.io/badge/PrestaShop-1.7.x--8.x-blue.svg)](https://www.prestashop.com/)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/ettorestani/abandonedcartadminnotifier)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/ettorestani/Abandoned-Cart-Admin-Email-Notifier)
 [![License](https://img.shields.io/badge/license-AFL%203.0-orange.svg)](https://opensource.org/licenses/AFL-3.0)
 [![PHP](https://img.shields.io/badge/php-7.2%2B-blue.svg)](https://www.php.net/)
 
@@ -61,7 +61,7 @@ This module is provided "as is", without warranty of any kind, express or implie
 
 ### Standard Installation
 
-1. Download the latest version from [Releases](https://github.com/ettorestani/abandonedcartadminnotifier/releases)
+1. Download the latest version from [Releases](https://github.com/ettorestani/Abandoned-Cart-Admin-Email-Notifier/releases)
 2. Go to your PrestaShop back office
 3. Navigate to **Modules** > **Module Manager** > **Upload a module**
 4. Select the downloaded ZIP file
