@@ -2,7 +2,7 @@
 <module>
     <name>abandonedcartadminnotifier</name>
     <displayName><![CDATA[Abandoned Cart Admin Email Notifier]]></displayName>
-    <version><![CDATA[1.0.0]]></version>
+    <version><![CDATA[1.1.0]]></version>
     <description><![CDATA[Sends email notifications to store administrators when a registered cart is abandoned.]]></description>
     <author><![CDATA[Ettore Stani]]></author>
     <tab><![CDATA[administration]]></tab>

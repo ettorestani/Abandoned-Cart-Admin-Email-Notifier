@@ -5,7 +5,7 @@
  * @author    Ettore Stani
  * @copyright 2024 Ettore Stani
  * @license   http://opensource.org/licenses/afl-3.0.php Academic Free License (AFL 3.0)
- * @version   1.0.0
+ * @version   1.1.0
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -25,6 +25,16 @@ class AbandonedCartAdminNotifier extends Module
     const CONFIG_EMAIL_RECIPIENTS = 'ACN_EMAIL_RECIPIENTS';
     const CONFIG_MODULE_ENABLED = 'ACN_MODULE_ENABLED';
     const CONFIG_SECURE_TOKEN = 'ACN_SECURE_TOKEN';
+    const CONFIG_MIN_CART_AGE_HOURS = 'ACN_MIN_CART_AGE_HOURS';
+    const CONFIG_MAX_CART_AGE_DAYS = 'ACN_MAX_CART_AGE_DAYS';
+
+    /**
+     * Cart selection window defaults: carts idle for at least MIN hours and at most MAX days
+     */
+    const DEFAULT_MIN_CART_AGE_HOURS = 24;
+    const DEFAULT_MAX_CART_AGE_DAYS = 7;
+    const MAX_ALLOWED_CART_AGE_DAYS = 90;
+    const MAX_CARTS_PER_RUN = 100;
 
     /**
      * Constructor
@@ -33,7 +43,7 @@ class AbandonedCartAdminNotifier extends Module
     {
         $this->name = 'abandonedcartadminnotifier';
         $this->tab = 'administration';
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
         $this->author = 'Ettore Stani';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array(
@@ -63,7 +73,9 @@ class AbandonedCartAdminNotifier extends Module
             && $this->installDatabase()
             && Configuration::updateValue(self::CONFIG_EMAIL_RECIPIENTS, '')
             && Configuration::updateValue(self::CONFIG_MODULE_ENABLED, 1)
-            && Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $secureToken);
+            && Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $secureToken)
+            && Configuration::updateValue(self::CONFIG_MIN_CART_AGE_HOURS, self::DEFAULT_MIN_CART_AGE_HOURS)
+            && Configuration::updateValue(self::CONFIG_MAX_CART_AGE_DAYS, self::DEFAULT_MAX_CART_AGE_DAYS);
     }
 
     /**
@@ -77,6 +89,8 @@ class AbandonedCartAdminNotifier extends Module
             && Configuration::deleteByName(self::CONFIG_EMAIL_RECIPIENTS)
             && Configuration::deleteByName(self::CONFIG_MODULE_ENABLED)
             && Configuration::deleteByName(self::CONFIG_SECURE_TOKEN)
+            && Configuration::deleteByName(self::CONFIG_MIN_CART_AGE_HOURS)
+            && Configuration::deleteByName(self::CONFIG_MAX_CART_AGE_DAYS)
             && parent::uninstall();
     }
 
@@ -159,24 +173,35 @@ class AbandonedCartAdminNotifier extends Module
      */
     private function processConfigurationForm()
     {
-        $emailRecipients = Tools::getValue(self::CONFIG_EMAIL_RECIPIENTS);
-        $moduleEnabled = (int) Tools::getValue(self::CONFIG_MODULE_ENABLED);
+        $emails = $this->parseEmailList(Tools::getValue(self::CONFIG_EMAIL_RECIPIENTS));
+        $moduleEnabled = (int) (bool) Tools::getValue(self::CONFIG_MODULE_ENABLED);
+        $minHours = trim((string) Tools::getValue(self::CONFIG_MIN_CART_AGE_HOURS));
+        $maxDays = trim((string) Tools::getValue(self::CONFIG_MAX_CART_AGE_DAYS));
 
-        // Validate email addresses
-        if (!empty($emailRecipients)) {
-            $emails = array_map('trim', explode(',', $emailRecipients));
-            foreach ($emails as $email) {
-                if (!empty($email) && !Validate::isEmail($email)) {
-                    return $this->displayError($this->l('One or more email addresses are not valid.'));
-                }
+        foreach ($emails as $email) {
+            if (!Validate::isEmail($email)) {
+                return $this->displayError($this->l('One or more email addresses are not valid.'));
             }
-            // Clean and rejoin emails
-            $emailRecipients = implode(',', array_filter($emails));
         }
 
-        // Save configuration
-        Configuration::updateValue(self::CONFIG_EMAIL_RECIPIENTS, pSQL($emailRecipients));
+        if (!ctype_digit($minHours) || (int) $minHours < 1) {
+            return $this->displayError($this->l('The inactivity threshold must be a whole number of hours, at least 1.'));
+        }
+        if (!ctype_digit($maxDays) || (int) $maxDays < 1 || (int) $maxDays > self::MAX_ALLOWED_CART_AGE_DAYS) {
+            return $this->displayError(sprintf(
+                $this->l('The maximum cart age must be a whole number of days between 1 and %d.'),
+                self::MAX_ALLOWED_CART_AGE_DAYS
+            ));
+        }
+        if ((int) $maxDays * 24 <= (int) $minHours) {
+            return $this->displayError($this->l('The maximum cart age must be longer than the inactivity threshold.'));
+        }
+
+        // Configuration::updateValue() escapes the value itself
+        Configuration::updateValue(self::CONFIG_EMAIL_RECIPIENTS, implode(',', $emails));
         Configuration::updateValue(self::CONFIG_MODULE_ENABLED, $moduleEnabled);
+        Configuration::updateValue(self::CONFIG_MIN_CART_AGE_HOURS, (int) $minHours);
+        Configuration::updateValue(self::CONFIG_MAX_CART_AGE_DAYS, (int) $maxDays);
 
         return $this->displayConfirmation($this->l('Configuration saved successfully.'));
     }
@@ -269,6 +294,24 @@ class AbandonedCartAdminNotifier extends Module
                         'cols' => 60,
                         'rows' => 3,
                     ),
+                    array(
+                        'type' => 'text',
+                        'label' => $this->l('Inactivity threshold'),
+                        'name' => self::CONFIG_MIN_CART_AGE_HOURS,
+                        'suffix' => $this->l('hours'),
+                        'class' => 'fixed-width-sm',
+                        'required' => true,
+                        'desc' => $this->l('A cart is considered abandoned when it has not been updated for this many hours. Below 24 hours, run the cron job every hour.'),
+                    ),
+                    array(
+                        'type' => 'text',
+                        'label' => $this->l('Maximum cart age'),
+                        'name' => self::CONFIG_MAX_CART_AGE_DAYS,
+                        'suffix' => $this->l('days'),
+                        'class' => 'fixed-width-sm',
+                        'required' => true,
+                        'desc' => $this->l('Carts idle for longer than this are never notified. Failed notifications are retried until the cart exceeds this age.'),
+                    ),
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -287,7 +330,29 @@ class AbandonedCartAdminNotifier extends Module
         return array(
             self::CONFIG_EMAIL_RECIPIENTS => Configuration::get(self::CONFIG_EMAIL_RECIPIENTS),
             self::CONFIG_MODULE_ENABLED => Configuration::get(self::CONFIG_MODULE_ENABLED),
+            self::CONFIG_MIN_CART_AGE_HOURS => $this->getMinCartAgeHours(),
+            self::CONFIG_MAX_CART_AGE_DAYS => $this->getMaxCartAgeDays(),
         );
+    }
+
+    /**
+     * @return int
+     */
+    private function getMinCartAgeHours()
+    {
+        $hours = (int) Configuration::get(self::CONFIG_MIN_CART_AGE_HOURS);
+
+        return $hours > 0 ? $hours : self::DEFAULT_MIN_CART_AGE_HOURS;
+    }
+
+    /**
+     * @return int
+     */
+    private function getMaxCartAgeDays()
+    {
+        $days = (int) Configuration::get(self::CONFIG_MAX_CART_AGE_DAYS);
+
+        return $days > 0 ? $days : self::DEFAULT_MAX_CART_AGE_DAYS;
     }
 
     /**
@@ -334,6 +399,8 @@ class AbandonedCartAdminNotifier extends Module
         $this->context->smarty->assign(array(
             'cron_url' => $cronUrl,
             'secure_token' => $secureToken,
+            // The cron must run at least as often as the threshold, or carts are notified late
+            'cron_schedule' => $this->getMinCartAgeHours() < 24 ? '0 * * * *' : '0 2 * * *',
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/cron_info.tpl');
@@ -342,9 +409,10 @@ class AbandonedCartAdminNotifier extends Module
     /**
      * Process cron job - main method to scan abandoned carts
      *
+     * @param bool $dryRun List the carts that would be notified without sending or logging anything
      * @return array Statistics array with processed carts, sent emails, errors
      */
-    public function processCronJob()
+    public function processCronJob($dryRun = false)
     {
         $stats = array(
             'processed' => 0,
@@ -353,46 +421,65 @@ class AbandonedCartAdminNotifier extends Module
             'error_messages' => array(),
         );
 
-        // Clear configuration cache to ensure fresh values
-        Configuration::clearConfigurationCacheForTesting();
+        if ($dryRun) {
+            // Works even with the module disabled, so the selection can be checked before enabling it
+            $stats['carts'] = array();
+            foreach ($this->getAbandonedCarts() as $cart) {
+                $stats['processed']++;
+                $stats['carts'][] = array(
+                    'id_cart' => (int) $cart['id_cart'],
+                    'id_customer' => (int) $cart['id_customer'],
+                    'date_upd' => $cart['date_upd'],
+                );
+            }
 
-        // Check if module is enabled (read without cache)
-        if (!Configuration::get(self::CONFIG_MODULE_ENABLED, null, null, null, false)) {
+            return $stats;
+        }
+
+        if (!Configuration::get(self::CONFIG_MODULE_ENABLED)) {
             $stats['error_messages'][] = 'Module is disabled';
             return $stats;
         }
 
-        // Check if email recipients are configured (read without cache)
-        $recipients = Configuration::get(self::CONFIG_EMAIL_RECIPIENTS, null, null, null, false);
+        $recipients = $this->parseEmailList(Configuration::get(self::CONFIG_EMAIL_RECIPIENTS));
         if (empty($recipients)) {
             $stats['error_messages'][] = 'No email recipients configured';
             return $stats;
         }
 
-        // Get abandoned carts
-        $abandonedCarts = $this->getAbandonedCarts();
+        // Prevent concurrent runs from sending the same notification twice
+        if (!$this->acquireLock()) {
+            $stats['error_messages'][] = 'Another cron run is already in progress';
+            return $stats;
+        }
 
-        foreach ($abandonedCarts as $cart) {
-            $stats['processed']++;
+        try {
+            foreach ($this->getAbandonedCarts() as $cart) {
+                $stats['processed']++;
 
-            try {
-                $result = $this->sendNotificationEmail($cart, $recipients);
-                if ($result) {
-                    $this->logNotification($cart['id_cart'], $cart['id_customer'], 'success', null);
-                    $stats['sent']++;
-                } else {
-                    $errorMsg = 'Failed to send email for cart ID: ' . $cart['id_cart'];
+                try {
+                    $failedRecipients = $this->sendNotificationEmail($cart, $recipients);
+                    if (count($failedRecipients) < count($recipients)) {
+                        // At least one recipient got it: don't retry, or the others would get duplicates
+                        $errorMsg = $failedRecipients ? 'Failed recipients: ' . implode(', ', $failedRecipients) : null;
+                        $this->logNotification($cart['id_cart'], $cart['id_customer'], 'success', $errorMsg);
+                        $stats['sent']++;
+                    } else {
+                        $errorMsg = 'Failed to send email for cart ID: ' . $cart['id_cart'];
+                        $this->logNotification($cart['id_cart'], $cart['id_customer'], 'failed', $errorMsg);
+                        $stats['errors']++;
+                        $stats['error_messages'][] = $errorMsg;
+                    }
+                } catch (Exception $e) {
+                    $errorMsg = 'Exception for cart ID ' . $cart['id_cart'] . ': ' . $e->getMessage();
                     $this->logNotification($cart['id_cart'], $cart['id_customer'], 'failed', $errorMsg);
                     $stats['errors']++;
                     $stats['error_messages'][] = $errorMsg;
+                    $this->log($errorMsg, 3);
                 }
-            } catch (Exception $e) {
-                $errorMsg = 'Exception for cart ID ' . $cart['id_cart'] . ': ' . $e->getMessage();
-                $this->logNotification($cart['id_cart'], $cart['id_customer'], 'failed', $errorMsg);
-                $stats['errors']++;
-                $stats['error_messages'][] = $errorMsg;
-                $this->log($errorMsg, 3);
             }
+        } finally {
+            $this->releaseLock();
         }
 
         return $stats;
@@ -401,19 +488,22 @@ class AbandonedCartAdminNotifier extends Module
     /**
      * Get abandoned carts that meet notification criteria
      *
+     * Failed notifications are retried on each run until the cart leaves the age window.
+     *
      * @return array Array of abandoned cart data
      */
     public function getAbandonedCarts()
     {
         $db = Db::getInstance();
 
-        // Get carts abandoned at least 24 hours ago
-        $maxTime = date('Y-m-d H:i:s', strtotime('-24 hours'));
+        $maxDate = date('Y-m-d H:i:s', strtotime('-' . $this->getMinCartAgeHours() . ' hours'));
+        $minDate = date('Y-m-d H:i:s', strtotime('-' . $this->getMaxCartAgeDays() . ' days'));
 
         $sql = '
             SELECT
                 c.id_cart,
                 c.id_customer,
+                c.id_currency,
                 c.date_upd,
                 cu.firstname,
                 cu.lastname,
@@ -421,14 +511,23 @@ class AbandonedCartAdminNotifier extends Module
             FROM `' . _DB_PREFIX_ . 'cart` c
             INNER JOIN `' . _DB_PREFIX_ . 'customer` cu ON c.id_customer = cu.id_customer
             LEFT JOIN `' . _DB_PREFIX_ . 'orders` o ON c.id_cart = o.id_cart
-            LEFT JOIN `' . _DB_PREFIX_ . 'abandoned_cart_notifications` acn ON c.id_cart = acn.id_cart
             WHERE c.id_customer > 0
+            AND cu.deleted = 0
             AND o.id_order IS NULL
-            AND acn.id_notification IS NULL
-            AND c.date_upd <= \'' . pSQL($maxTime) . '\'
+            AND NOT EXISTS (
+                SELECT 1 FROM `' . _DB_PREFIX_ . 'abandoned_cart_notifications` acn
+                WHERE acn.id_cart = c.id_cart AND acn.email_status = \'success\'
+            )
+            AND c.date_upd BETWEEN \'' . pSQL($minDate) . '\' AND \'' . pSQL($maxDate) . '\'
+            AND EXISTS (
+                SELECT 1 FROM `' . _DB_PREFIX_ . 'cart_product` cp WHERE cp.id_cart = c.id_cart
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM `' . _DB_PREFIX_ . 'orders` o2
+                WHERE o2.id_customer = c.id_customer AND o2.date_add >= c.date_upd
+            )
             ORDER BY c.date_upd DESC
-            LIMIT 100
-        ';
+            LIMIT ' . (int) self::MAX_CARTS_PER_RUN;
 
         $carts = $db->executeS($sql);
 
@@ -463,63 +562,55 @@ class AbandonedCartAdminNotifier extends Module
     }
 
     /**
-     * Get cart total amount
+     * Get cart total amount formatted in the cart's own currency
      *
      * @param int $idCart Cart ID
-     * @return float Cart total
+     * @return string Formatted cart total
      */
-    private function getCartTotal($idCart)
+    private function getFormattedCartTotal($idCart)
     {
         $cart = new Cart((int) $idCart);
-        return $cart->getOrderTotal(true, Cart::BOTH);
+        $currency = new Currency((int) $cart->id_currency);
+        if (!Validate::isLoadedObject($currency)) {
+            $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+        }
+
+        return Tools::displayPrice($cart->getOrderTotal(true, Cart::BOTH), $currency);
     }
 
     /**
      * Send notification email for an abandoned cart
      *
      * @param array $cartData Cart and customer data
-     * @param string $recipients Comma-separated email recipients
-     * @return bool Success status
+     * @param array $recipients Recipient email addresses
+     * @return array Recipients the email could not be sent to
      */
-    public function sendNotificationEmail($cartData, $recipients)
+    public function sendNotificationEmail($cartData, array $recipients)
     {
         $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
         $shopEmail = Configuration::get('PS_SHOP_EMAIL');
         $shopName = Configuration::get('PS_SHOP_NAME');
 
-        // Get cart products
-        $products = $this->getCartProducts((int) $cartData['id_cart']);
         $productList = '';
-        foreach ($products as $product) {
-            $productList .= '- ' . $product['name'] . ' (Quantity: ' . $product['quantity'] . ")\n";
+        foreach ($this->getCartProducts((int) $cartData['id_cart']) as $product) {
+            $productList .= '- ' . $this->sanitizeMailValue($product['name'])
+                . ' (' . $this->l('Quantity') . ': ' . (int) $product['quantity'] . ")\n";
         }
 
-        // Get cart total
-        $cartTotal = $this->getCartTotal((int) $cartData['id_cart']);
-        $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
-        $formattedTotal = Tools::displayPrice($cartTotal, $currency);
-
-        // Prepare email template variables
         $templateVars = array(
-            '{id_customer}' => $cartData['id_customer'],
-            '{firstname}' => $cartData['firstname'],
-            '{lastname}' => $cartData['lastname'],
-            '{customer_email}' => $cartData['email'],
-            '{id_cart}' => $cartData['id_cart'],
-            '{date_upd}' => $cartData['date_upd'],
-            '{total_amount}' => $formattedTotal,
+            '{id_customer}' => (int) $cartData['id_customer'],
+            '{firstname}' => $this->sanitizeMailValue($cartData['firstname']),
+            '{lastname}' => $this->sanitizeMailValue($cartData['lastname']),
+            '{customer_email}' => $this->sanitizeMailValue($cartData['email']),
+            '{id_cart}' => (int) $cartData['id_cart'],
+            '{date_upd}' => $this->sanitizeMailValue($cartData['date_upd']),
+            '{total_amount}' => $this->getFormattedCartTotal((int) $cartData['id_cart']),
             '{product_list}' => $productList,
         );
 
-        // Parse recipients - remove duplicates and empty values
-        $emailList = array_map('trim', explode(',', $recipients));
-        $emailList = array_filter($emailList);
-        $emailList = array_unique($emailList);
-        $emailList = array_values($emailList);
-
         // Send email to each recipient individually
-        $allSuccess = true;
-        foreach ($emailList as $toEmail) {
+        $failedRecipients = array();
+        foreach ($recipients as $toEmail) {
             $result = Mail::Send(
                 $idLang,
                 'abandonedcart',
@@ -538,15 +629,78 @@ class AbandonedCartAdminNotifier extends Module
 
             if (!$result) {
                 $this->log('Failed to send email to: ' . $toEmail, 3);
-                $allSuccess = false;
+                $failedRecipients[] = $toEmail;
             }
         }
 
-        return $allSuccess;
+        return $failedRecipients;
     }
 
     /**
-     * Log notification to database
+     * Neutralize customer-controlled values before they are injected into the email templates
+     *
+     * Mail::Send() decodes HTML entities in template vars, so escaping would be undone:
+     * decode fully here and drop markup and placeholder delimiters instead.
+     *
+     * @param string $value
+     * @return string
+     */
+    private function sanitizeMailValue($value)
+    {
+        $value = (string) $value;
+        do {
+            $previous = $value;
+            $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+        } while ($value !== $previous);
+
+        return str_replace(array('<', '>', '{', '}'), '', $value);
+    }
+
+    /**
+     * Split a recipient string (comma, semicolon or newline separated) into unique addresses
+     *
+     * @param string $value
+     * @return array
+     */
+    private function parseEmailList($value)
+    {
+        $emails = preg_split('/[\s,;]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY);
+
+        return array_values(array_unique($emails));
+    }
+
+    /**
+     * Acquire a MySQL named lock so only one cron run processes carts at a time
+     *
+     * @return bool
+     */
+    private function acquireLock()
+    {
+        return (bool) Db::getInstance()->getValue(
+            'SELECT GET_LOCK(\'' . pSQL($this->getLockName()) . '\', 0)',
+            false
+        );
+    }
+
+    /**
+     * @return void
+     */
+    private function releaseLock()
+    {
+        Db::getInstance()->getValue('SELECT RELEASE_LOCK(\'' . pSQL($this->getLockName()) . '\')', false);
+    }
+
+    /**
+     * @return string
+     */
+    private function getLockName()
+    {
+        // Named locks are server-wide: scope to this database
+        return substr(_DB_NAME_ . '_' . _DB_PREFIX_ . 'acn_cron', 0, 64);
+    }
+
+    /**
+     * Log notification to database (one row per cart, updated on retry)
      *
      * @param int $idCart Cart ID
      * @param int $idCustomer Customer ID
@@ -556,19 +710,20 @@ class AbandonedCartAdminNotifier extends Module
      */
     public function logNotification($idCart, $idCustomer, $status, $errorMessage = null)
     {
-        $db = Db::getInstance();
+        $now = date('Y-m-d H:i:s');
+        $status = $status === 'success' ? 'success' : 'failed';
+        $error = $errorMessage === null ? 'NULL' : '\'' . pSQL($errorMessage) . '\'';
 
-        $data = array(
-            'id_cart' => (int) $idCart,
-            'id_customer' => (int) $idCustomer,
-            'date_sent' => date('Y-m-d H:i:s'),
-            'email_status' => pSQL($status),
-            'error_message' => $errorMessage ? pSQL($errorMessage) : null,
-            'log_visible' => 1,
-            'date_add' => date('Y-m-d H:i:s'),
-        );
-
-        return $db->insert('abandoned_cart_notifications', $data);
+        return Db::getInstance()->execute('
+            INSERT INTO `' . _DB_PREFIX_ . 'abandoned_cart_notifications`
+                (`id_cart`, `id_customer`, `date_sent`, `email_status`, `error_message`, `log_visible`, `date_add`)
+            VALUES (' . (int) $idCart . ', ' . (int) $idCustomer . ', \'' . pSQL($now) . '\', \'' . $status . '\', ' . $error . ', 1, \'' . pSQL($now) . '\')
+            ON DUPLICATE KEY UPDATE
+                `date_sent` = VALUES(`date_sent`),
+                `email_status` = VALUES(`email_status`),
+                `error_message` = VALUES(`error_message`),
+                `log_visible` = 1
+        ');
     }
 
     /**

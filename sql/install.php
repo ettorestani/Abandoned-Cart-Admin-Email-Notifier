@@ -21,7 +21,7 @@ $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'abandoned_cart_notificati
     `log_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `date_add` DATETIME NOT NULL,
     PRIMARY KEY (`id_notification`),
-    INDEX `idx_id_cart` (`id_cart`),
+    UNIQUE KEY `uniq_id_cart` (`id_cart`),
     INDEX `idx_id_customer` (`id_customer`),
     INDEX `idx_date_sent` (`date_sent`),
     INDEX `idx_log_visible` (`log_visible`)

@@ -18,8 +18,8 @@
 
         <div class="alert alert-warning">
             <p><strong>{l s='Important:' mod='abandonedcartadminnotifier'}</strong></p>
-            <p>{l s='Configure your server cron to call this URL once every 24 hours. Example crontab entry:' mod='abandonedcartadminnotifier'}</p>
-            <code>0 2 * * * wget -q -O /dev/null "{$cron_url|escape:'html':'UTF-8'}"</code>
+            <p>{l s='Configure your server cron to call this URL. Example crontab entry for the current inactivity threshold (hourly below 24 hours, otherwise daily):' mod='abandonedcartadminnotifier'}</p>
+            <code>{$cron_schedule|escape:'html':'UTF-8'} wget -q -O /dev/null "{$cron_url|escape:'html':'UTF-8'}"</code>
         </div>
 
         <div class="well">

@@ -40,7 +40,7 @@
                                 </td>
                                 <td>
                                     {if $notification.error_message}
-                                        <span class="text-danger">{$notification.error_message|escape:'html':'UTF-8'|truncate:50}</span>
+                                        <span class="text-danger"><span title="{$notification.error_message|escape:'html':'UTF-8'}">{$notification.error_message|truncate:50|escape:'html':'UTF-8'}</span></span>
                                     {else}
                                         -
                                     {/if}
@@ -51,7 +51,7 @@
                 </table>
             </div>
             <div class="panel-footer">
-                <a href="{$clear_log_url|escape:'html':'UTF-8'}" class="btn btn-default" onclick="return confirm('{l s='Are you sure you want to clear the notification log?' mod='abandonedcartadminnotifier'}');">
+                <a href="{$clear_log_url|escape:'html':'UTF-8'}" class="btn btn-default" onclick="return confirm('{l s='Are you sure you want to clear the notification log?' mod='abandonedcartadminnotifier' js=1}');">
                     <i class="icon-trash"></i> {l s='Clear Log' mod='abandonedcartadminnotifier'}
                 </a>
             </div>

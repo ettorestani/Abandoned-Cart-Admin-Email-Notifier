@@ -27,6 +27,16 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_f46
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b300b2744e9fc27eb478ef709fd55710'] = 'Inserisci uno o più indirizzi email separati da virgola per ricevere le notifiche.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_c9cc8cce247e49bae79f15173ce97354'] = 'Salva';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_ccfa7609f6d0f85959ab2df87e467ced'] = 'Nuovo carrello abbandonato';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_7877eec7ae28424ce96dfae8a2c36515'] = 'La soglia di inattività deve essere un numero intero di ore, almeno 1.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_dd0743e82f7c180a8b1fcd52412626bf'] = 'L\'età massima del carrello deve essere un numero intero di giorni tra 1 e %d.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_a3485cc1bed320125dab23ec9f0ebc5a'] = 'L\'età massima del carrello deve essere superiore alla soglia di inattività.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_a6c89d97b22082a256a51eaa1f2e05a8'] = 'Soglia di inattività';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_73cdddd7730abfc13a55efb9f5685a3b'] = 'ore';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_78ef000d6036f6f41f1dc958fcd189ac'] = 'Un carrello è considerato abbandonato quando non viene modificato da questo numero di ore. Sotto le 24 ore, esegui il cron ogni ora.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_f3512468528031dd831d6faf061d6481'] = 'Età massima del carrello';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_44fdec47036f482b68b748f9d786801b'] = 'giorni';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_cb20af52476d52cd5cd45ba63b52aefd'] = 'I carrelli inattivi da più tempo non vengono mai notificati. Le notifiche fallite vengono ritentate finché il carrello non supera questa età.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_694e8d1f2ee056f98ee488bdc4982d73'] = 'Quantità';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';
@@ -46,7 +56,7 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_b17d625f8eac7
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_85555d9856619e3943be6c3fa21211cd'] = 'Configurazione Cron Job';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_984844af1d89879ae4f852f2e2b8c02c'] = 'URL Cron:';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_7a262cb0d3d917313c8ba12f996fe83c'] = 'Importante:';
-$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_4d07f9980dde4d576385945400a3c0c5'] = 'Configura il cron del tuo server per chiamare questo URL una volta ogni 24 ore. Esempio di voce crontab:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_ac920cea33d075c10168d67e5d97aed7'] = 'Configura il cron del tuo server per chiamare questo URL. Esempio di voce crontab per la soglia di inattività attuale (ogni ora sotto le 24 ore, altrimenti una volta al giorno):';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_ccb5e2dd86fd5aab8983f3c1ff7b0ba4'] = 'Token Sicuro:';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_8cbf9a47aaef27b9e011ec42c36bd775'] = 'Mantieni questo token segreto. Protegge il cron job da accessi non autorizzati.';
 
