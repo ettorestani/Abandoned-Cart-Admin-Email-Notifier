@@ -22,9 +22,9 @@ class AbandonedCartAdminNotifierCronModuleFrontController extends ModuleFrontCon
     const MAX_EXECUTION_TIME = 300;
 
     /**
-     * @var bool Disable SSL requirement for cron
+     * @var bool Stay on HTTPS when SSL is enabled, so the token is never redirected to plain HTTP
      */
-    public $ssl = false;
+    public $ssl = true;
 
     /**
      * @var bool No authentication required
@@ -43,10 +43,28 @@ class AbandonedCartAdminNotifierCronModuleFrontController extends ModuleFrontCon
      */
     public function init()
     {
-        // Set maximum execution time
-        set_time_limit(self::MAX_EXECUTION_TIME);
+        // Set maximum execution time (may be disabled on some hosts)
+        @set_time_limit(self::MAX_EXECUTION_TIME);
 
         parent::init();
+    }
+
+    /**
+     * The cron must run even when the shop is in maintenance mode
+     *
+     * @return void
+     */
+    protected function displayMaintenancePage()
+    {
+    }
+
+    /**
+     * The cron must run regardless of the caller's geolocation
+     *
+     * @return void
+     */
+    protected function displayRestrictedCountryPage()
+    {
     }
 
     /**
@@ -71,12 +89,15 @@ class AbandonedCartAdminNotifierCronModuleFrontController extends ModuleFrontCon
         // Execute cron job
         $startTime = microtime(true);
 
+        $dryRun = (bool) Tools::getValue('dry_run');
+
         try {
-            $stats = $this->module->processCronJob();
+            $stats = $this->module->processCronJob($dryRun);
             $executionTime = round(microtime(true) - $startTime, 2);
 
-            $this->respondJson(array(
+            $response = array(
                 'success' => true,
+                'dry_run' => $dryRun,
                 'execution_time' => $executionTime . 's',
                 'statistics' => array(
                     'carts_processed' => $stats['processed'],
@@ -84,7 +105,12 @@ class AbandonedCartAdminNotifierCronModuleFrontController extends ModuleFrontCon
                     'errors' => $stats['errors'],
                 ),
                 'error_messages' => $stats['error_messages'],
-            ));
+            );
+            if ($dryRun) {
+                $response['carts_to_notify'] = $stats['carts'];
+            }
+
+            $this->respondJson($response);
         } catch (Exception $e) {
             PrestaShopLogger::addLog(
                 '[AbandonedCartAdminNotifier] Cron exception: ' . $e->getMessage(),
@@ -110,9 +136,9 @@ class AbandonedCartAdminNotifierCronModuleFrontController extends ModuleFrontCon
     private function validateSecureToken()
     {
         $requestToken = Tools::getValue('secure_token');
-        $storedToken = Configuration::get('ACN_SECURE_TOKEN');
+        $storedToken = Configuration::get(AbandonedCartAdminNotifier::CONFIG_SECURE_TOKEN);
 
-        if (empty($requestToken) || empty($storedToken)) {
+        if (!is_string($requestToken) || empty($requestToken) || empty($storedToken)) {
             return false;
         }
 
