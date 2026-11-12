@@ -684,7 +684,7 @@ class AbandonedCartAdminNotifier extends Module
      * Complete the context that config/config.inc.php leaves partial on the command line
      *
      * Shop, language and link are already set there; cart prices and the mail also need
-     * a currency and a (guest) customer.
+     * a currency, an empty customer and cart (as on a front request) and the CLDR locale.
      *
      * @return void
      */
@@ -700,8 +700,28 @@ class AbandonedCartAdminNotifier extends Module
         if (!$context->customer) {
             $context->customer = new Customer();
         }
+        if (!$context->cart) {
+            // Like a front request: Product::getPriceStatic() needs a cart object in the context
+            $context->cart = new Cart();
+        }
         if (!$context->link) {
             $context->link = new Link();
+        }
+
+        // 1.7.6+: prices are formatted by the CLDR locale, which needs the front container
+        // that a front controller would build (not available on the command line otherwise)
+        $builder = 'PrestaShop\\PrestaShop\\Adapter\\ContainerBuilder';
+        if (property_exists($context, 'currentLocale') && method_exists('Tools', 'getContextLocale')) {
+            try {
+                if (!isset($context->container) && class_exists($builder) && method_exists($builder, 'getContainer')) {
+                    $context->container = call_user_func(array($builder, 'getContainer'), 'front', _PS_MODE_DEV_);
+                }
+                if (!$context->currentLocale) {
+                    $context->currentLocale = Tools::getContextLocale($context);
+                }
+            } catch (Throwable $e) {
+                $this->log('CLI locale setup failed, prices use the fallback format: ' . $e->getMessage(), 2);
+            }
         }
     }
 
@@ -926,7 +946,12 @@ class AbandonedCartAdminNotifier extends Module
         }
 
         if (method_exists('Tools', 'displayPrice')) {
-            return call_user_func(array('Tools', 'displayPrice'), $amount, $currency);
+            try {
+                return call_user_func(array('Tools', 'displayPrice'), $amount, $currency);
+            } catch (Throwable $e) {
+                // On 1.7.6+ displayPrice needs the locale too
+                $this->log('Price formatting failed: ' . $e->getMessage(), 2);
+            }
         }
 
         return number_format((float) $amount, 2, ',', '.') . ' ' . $currency->sign;
