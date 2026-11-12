@@ -37,6 +37,12 @@ class AbandonedCartAdminNotifier extends Module
     const MAX_CARTS_PER_RUN = 100;
 
     /**
+     * Seconds after which a web run stops starting new carts, safely below the cron controller's
+     * 300 s time limit: a run killed mid-cart would resend that cart's emails on the next run
+     */
+    const CRON_TIME_BUDGET = 240;
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -410,10 +416,12 @@ class AbandonedCartAdminNotifier extends Module
      * Process cron job - main method to scan abandoned carts
      *
      * @param bool $dryRun List the carts that would be notified without sending or logging anything
+     * @param int $timeBudget Seconds after which no new cart is started (0 = no limit)
      * @return array Statistics array with processed carts, sent emails, errors
      */
-    public function processCronJob($dryRun = false)
+    public function processCronJob($dryRun = false, $timeBudget = self::CRON_TIME_BUDGET)
     {
+        $startTime = microtime(true);
         $stats = array(
             'processed' => 0,
             'sent' => 0,
@@ -460,7 +468,16 @@ class AbandonedCartAdminNotifier extends Module
         }
 
         try {
-            foreach ($this->getAbandonedCarts() as $cart) {
+            $carts = $this->getAbandonedCarts();
+            foreach ($carts as $index => $cart) {
+                if ($timeBudget > 0 && microtime(true) - $startTime >= $timeBudget) {
+                    $stats['error_messages'][] = sprintf(
+                        'Time budget of %d s reached: %d carts left for the next run',
+                        $timeBudget,
+                        count($carts) - $index
+                    );
+                    break;
+                }
                 $stats['processed']++;
 
                 try {
