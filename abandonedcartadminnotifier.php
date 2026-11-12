@@ -526,7 +526,9 @@ class AbandonedCartAdminNotifier extends Module
             )
             AND c.date_upd BETWEEN \'' . pSQL($minDate) . '\' AND \'' . pSQL($maxDate) . '\'
             AND EXISTS (
-                SELECT 1 FROM `' . _DB_PREFIX_ . 'cart_product` cp WHERE cp.id_cart = c.id_cart
+                SELECT 1 FROM `' . _DB_PREFIX_ . 'cart_product` cp
+                INNER JOIN `' . _DB_PREFIX_ . 'product` p ON p.id_product = cp.id_product
+                WHERE cp.id_cart = c.id_cart
             )
             AND NOT EXISTS (
                 SELECT 1 FROM `' . _DB_PREFIX_ . 'orders` o2
