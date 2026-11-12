@@ -37,6 +37,7 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_44f
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_694e8d1f2ee056f98ee488bdc4982d73'] = 'Quantità';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_3819ab38957ba7b2997999dfd52354cd'] = 'I carrelli inattivi da più tempo non vengono mai notificati. Le notifiche fallite vengono ritentate nelle esecuzioni successive, fino a %d tentativi, finché il carrello rientra in questa età.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_e47f82c4fd4322692e64eb943d461a93'] = 'Sei sicuro di voler disinstallare questo modulo? Le impostazioni verranno cancellate; lo storico delle notifiche viene conservato, così dopo una reinstallazione i carrelli già notificati non vengono notificati di nuovo.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_4b7a24375a430e619cec53c9b1715240'] = 'È stato generato un nuovo token di sicurezza: aggiorna l\'URL nel cron del server, quello vecchio non funziona più.';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';
@@ -59,6 +60,8 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_7a262cb0d3d917313c8b
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_ac920cea33d075c10168d67e5d97aed7'] = 'Configura il cron del tuo server per chiamare questo URL. Esempio di voce crontab per la soglia di inattività attuale (ogni ora sotto le 24 ore, altrimenti una volta al giorno):';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_ccb5e2dd86fd5aab8983f3c1ff7b0ba4'] = 'Token Sicuro:';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_8cbf9a47aaef27b9e011ec42c36bd775'] = 'Mantieni questo token segreto. Protegge il cron job da accessi non autorizzati.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_a1c374df47809abbfba0007b0d1813c5'] = 'L\'URL attuale del cron smetterà di funzionare finché non lo aggiorni sul server. Generare un nuovo token?';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_61f7a1d7a9496d2d8fb3df21d20afe1a'] = 'Genera un nuovo token';
 
 // support.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>support_cc4132acc88c59e8c138f9717b257124'] = 'Supporta Questo Modulo';

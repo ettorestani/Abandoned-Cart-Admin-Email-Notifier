@@ -26,6 +26,11 @@
             <p><strong>{l s='Secure Token:' mod='abandonedcartadminnotifier'}</strong></p>
             <code>{$secure_token|escape:'html':'UTF-8'}</code>
             <p class="help-block">{l s='Keep this token secret. It protects the cron job from unauthorized access.' mod='abandonedcartadminnotifier'}</p>
+            <form method="post" action="{$form_action|escape:'html':'UTF-8'}" onsubmit="return confirm('{l s='The current cron URL will stop working until you update it on the server. Generate a new token?' mod='abandonedcartadminnotifier' js=1}');">
+                <button type="submit" name="regenerateCronToken" value="1" class="btn btn-default">
+                    <i class="icon-refresh"></i> {l s='Generate a new token' mod='abandonedcartadminnotifier'}
+                </button>
+            </form>
         </div>
     </div>
 </div>

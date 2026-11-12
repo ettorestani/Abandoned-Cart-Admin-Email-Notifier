@@ -77,15 +77,12 @@ class AbandonedCartAdminNotifier extends Module
      */
     public function install()
     {
-        // Generate secure token for cron
-        $secureToken = bin2hex(random_bytes(32));
-
         return parent::install()
             && $this->installDatabase()
             && $this->ensureSchema()
             && Configuration::updateValue(self::CONFIG_EMAIL_RECIPIENTS, '')
             && Configuration::updateValue(self::CONFIG_MODULE_ENABLED, 1)
-            && Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $secureToken)
+            && Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $this->generateSecureToken())
             && Configuration::updateValue(self::CONFIG_MIN_CART_AGE_HOURS, self::DEFAULT_MIN_CART_AGE_HOURS)
             && Configuration::updateValue(self::CONFIG_MAX_CART_AGE_DAYS, self::DEFAULT_MAX_CART_AGE_DAYS);
     }
@@ -173,6 +170,13 @@ class AbandonedCartAdminNotifier extends Module
             $output .= $this->clearNotificationLog();
         }
 
+        if ($this->isPostRequest() && Tools::isSubmit('regenerateCronToken')) {
+            Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $this->generateSecureToken());
+            $output .= $this->displayConfirmation(
+                $this->l('A new secure token has been generated: update the URL in the server cron job, the old one no longer works.')
+            );
+        }
+
         // Display configuration form
         $output .= $this->renderConfigurationForm();
 
@@ -196,6 +200,14 @@ class AbandonedCartAdminNotifier extends Module
     private function isPostRequest()
     {
         return isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'POST';
+    }
+
+    /**
+     * @return string 64 hex characters
+     */
+    private function generateSecureToken()
+    {
+        return bin2hex(random_bytes(32));
     }
 
     /**
@@ -454,6 +466,7 @@ class AbandonedCartAdminNotifier extends Module
         $this->context->smarty->assign(array(
             'cron_url' => $cronUrl,
             'secure_token' => $secureToken,
+            'form_action' => $this->getConfigPageUrl(),
             // The cron must run at least as often as the threshold, or carts are notified late
             'cron_schedule' => $this->getMinCartAgeHours() < 24 ? '0 * * * *' : '0 2 * * *',
         ));
