@@ -43,6 +43,19 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b42
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_4e8d5e5492c42a5058d220efcac00228'] = '%d ore';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_cdca48ec5dde79b84b395c0c557bb290'] = '%d giorni';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b2f8489bbd55a4e9b9edbbbfe49edf70'] = 'non disponibile';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_3e9188cc25b1833cc8447f44283fbca2'] = 'L\'avviso del cron deve essere un numero intero di ore tra 1 e %d.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_0b8cfb334e4591440f2fe0c98364cdbe'] = 'Avviso cron fermo';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_d96eff16bfa2c8fa71a3daa010e7139b'] = 'Questa pagina mostra un avviso quando il cron non viene eseguito da questo numero di ore.';
+
+// cron_status.tpl
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_db6571bcf7b4ce1e130c767fe448326c'] = 'Notifiche inviate:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_e1fc9ed7290e33f8506b91bb6323acaf'] = 'Carrelli elaborati:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_212a0488abf6c0d52971d8e90bf314f9'] = '%s fa';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_9d84f32cb83519a061b3618587efb192'] = 'Ultima esecuzione:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_01f494aafd5151d6661bd494432b2f6a'] = 'Il cron non viene eseguito da più di %d ore: controllalo sul server.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_f43eca6d515b448845ab4f0419161713'] = 'Il cron non risulta mai eseguito da quando è attivo questo controllo. Configuralo sul server con l\'URL indicato più sotto.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_2842912b9e48165ddc6645d021c9b3a3'] = 'Stato del cron';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_c48c42c966b3a35ad3b893e798bdec7c'] = 'Errori:';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';

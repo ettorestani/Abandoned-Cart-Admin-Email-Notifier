@@ -1,6 +1,6 @@
 <?php
 /**
- * Upgrade to 1.2.0: new notification log columns (attempts)
+ * Upgrade to 1.2.0: new notification log columns (attempts) and cron alert delay (default 48 hours)
  *
  * @author    Ettore Stani
  * @copyright 2024 Ettore Stani
@@ -18,5 +18,9 @@ if (!defined('_PS_VERSION_')) {
 function upgrade_module_1_2_0($module)
 {
     // Existing rows get attempts = 1 from the column default
-    return $module->ensureSchema();
+    return $module->ensureSchema()
+        && Configuration::updateValue(
+            AbandonedCartAdminNotifier::CONFIG_CRON_ALERT_HOURS,
+            AbandonedCartAdminNotifier::DEFAULT_CRON_ALERT_HOURS
+        );
 }

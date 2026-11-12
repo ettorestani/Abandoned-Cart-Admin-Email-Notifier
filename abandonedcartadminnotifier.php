@@ -27,6 +27,9 @@ class AbandonedCartAdminNotifier extends Module
     const CONFIG_SECURE_TOKEN = 'ACN_SECURE_TOKEN';
     const CONFIG_MIN_CART_AGE_HOURS = 'ACN_MIN_CART_AGE_HOURS';
     const CONFIG_MAX_CART_AGE_DAYS = 'ACN_MAX_CART_AGE_DAYS';
+    const CONFIG_CRON_ALERT_HOURS = 'ACN_CRON_ALERT_HOURS';
+    const CONFIG_LAST_RUN = 'ACN_LAST_RUN';
+    const CONFIG_LAST_RUN_RESULT = 'ACN_LAST_RUN_RESULT';
 
     /**
      * Cart selection window defaults: carts idle for at least MIN hours and at most MAX days
@@ -35,6 +38,12 @@ class AbandonedCartAdminNotifier extends Module
     const DEFAULT_MAX_CART_AGE_DAYS = 7;
     const MAX_ALLOWED_CART_AGE_DAYS = 90;
     const MAX_CARTS_PER_RUN = 100;
+
+    /**
+     * The configuration page warns when the cron has not run for this many hours
+     */
+    const DEFAULT_CRON_ALERT_HOURS = 48;
+    const MAX_CRON_ALERT_HOURS = 720;
 
     /**
      * Seconds after which a web run stops starting new carts, safely below the cron controller's
@@ -84,7 +93,8 @@ class AbandonedCartAdminNotifier extends Module
             && Configuration::updateValue(self::CONFIG_MODULE_ENABLED, 1)
             && Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $this->generateSecureToken())
             && Configuration::updateValue(self::CONFIG_MIN_CART_AGE_HOURS, self::DEFAULT_MIN_CART_AGE_HOURS)
-            && Configuration::updateValue(self::CONFIG_MAX_CART_AGE_DAYS, self::DEFAULT_MAX_CART_AGE_DAYS);
+            && Configuration::updateValue(self::CONFIG_MAX_CART_AGE_DAYS, self::DEFAULT_MAX_CART_AGE_DAYS)
+            && Configuration::updateValue(self::CONFIG_CRON_ALERT_HOURS, self::DEFAULT_CRON_ALERT_HOURS);
     }
 
     /**
@@ -102,6 +112,9 @@ class AbandonedCartAdminNotifier extends Module
             && Configuration::deleteByName(self::CONFIG_SECURE_TOKEN)
             && Configuration::deleteByName(self::CONFIG_MIN_CART_AGE_HOURS)
             && Configuration::deleteByName(self::CONFIG_MAX_CART_AGE_DAYS)
+            && Configuration::deleteByName(self::CONFIG_CRON_ALERT_HOURS)
+            && Configuration::deleteByName(self::CONFIG_LAST_RUN)
+            && Configuration::deleteByName(self::CONFIG_LAST_RUN_RESULT)
             && parent::uninstall();
     }
 
@@ -177,6 +190,9 @@ class AbandonedCartAdminNotifier extends Module
             );
         }
 
+        // Cron health first: a cron that stopped running must be noticed
+        $output .= $this->renderCronStatus();
+
         // Display configuration form
         $output .= $this->renderConfigurationForm();
 
@@ -242,6 +258,7 @@ class AbandonedCartAdminNotifier extends Module
         $moduleEnabled = (int) (bool) Tools::getValue(self::CONFIG_MODULE_ENABLED);
         $minHours = trim((string) Tools::getValue(self::CONFIG_MIN_CART_AGE_HOURS));
         $maxDays = trim((string) Tools::getValue(self::CONFIG_MAX_CART_AGE_DAYS));
+        $alertHours = trim((string) Tools::getValue(self::CONFIG_CRON_ALERT_HOURS));
 
         foreach ($emails as $email) {
             if (!Validate::isEmail($email)) {
@@ -261,12 +278,19 @@ class AbandonedCartAdminNotifier extends Module
         if ((int) $maxDays * 24 <= (int) $minHours) {
             return $this->displayError($this->l('The maximum cart age must be longer than the inactivity threshold.'));
         }
+        if (!ctype_digit($alertHours) || (int) $alertHours < 1 || (int) $alertHours > self::MAX_CRON_ALERT_HOURS) {
+            return $this->displayError(sprintf(
+                $this->l('The cron alert delay must be a whole number of hours between 1 and %d.'),
+                self::MAX_CRON_ALERT_HOURS
+            ));
+        }
 
         // Configuration::updateValue() escapes the value itself
         Configuration::updateValue(self::CONFIG_EMAIL_RECIPIENTS, implode(',', $emails));
         Configuration::updateValue(self::CONFIG_MODULE_ENABLED, $moduleEnabled);
         Configuration::updateValue(self::CONFIG_MIN_CART_AGE_HOURS, (int) $minHours);
         Configuration::updateValue(self::CONFIG_MAX_CART_AGE_DAYS, (int) $maxDays);
+        Configuration::updateValue(self::CONFIG_CRON_ALERT_HOURS, (int) $alertHours);
 
         return $this->displayConfirmation($this->l('Configuration saved successfully.'));
     }
@@ -380,6 +404,15 @@ class AbandonedCartAdminNotifier extends Module
                             self::MAX_SEND_ATTEMPTS
                         ),
                     ),
+                    array(
+                        'type' => 'text',
+                        'label' => $this->l('Cron alert'),
+                        'name' => self::CONFIG_CRON_ALERT_HOURS,
+                        'suffix' => $this->l('hours'),
+                        'class' => 'fixed-width-sm',
+                        'required' => true,
+                        'desc' => $this->l('This page shows a warning when the cron job has not run for this many hours.'),
+                    ),
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -400,6 +433,7 @@ class AbandonedCartAdminNotifier extends Module
             self::CONFIG_MODULE_ENABLED => Configuration::get(self::CONFIG_MODULE_ENABLED),
             self::CONFIG_MIN_CART_AGE_HOURS => $this->getMinCartAgeHours(),
             self::CONFIG_MAX_CART_AGE_DAYS => $this->getMaxCartAgeDays(),
+            self::CONFIG_CRON_ALERT_HOURS => $this->getCronAlertHours(),
         );
     }
 
@@ -421,6 +455,45 @@ class AbandonedCartAdminNotifier extends Module
         $days = (int) Configuration::get(self::CONFIG_MAX_CART_AGE_DAYS);
 
         return $days > 0 ? $days : self::DEFAULT_MAX_CART_AGE_DAYS;
+    }
+
+    /**
+     * @return int
+     */
+    private function getCronAlertHours()
+    {
+        $hours = (int) Configuration::get(self::CONFIG_CRON_ALERT_HOURS);
+
+        return $hours > 0 ? $hours : self::DEFAULT_CRON_ALERT_HOURS;
+    }
+
+    /**
+     * Render the last cron run, with a warning when it is older than the alert delay
+     *
+     * @return string HTML panel
+     */
+    private function renderCronStatus()
+    {
+        $lastRun = (string) Configuration::get(self::CONFIG_LAST_RUN);
+        $timestamp = $lastRun !== '' ? strtotime($lastRun) : false;
+        $result = json_decode((string) Configuration::get(self::CONFIG_LAST_RUN_RESULT), true);
+        $result = is_array($result) ? $result : array();
+        $alertHours = $this->getCronAlertHours();
+
+        $this->context->smarty->assign(array(
+            'cron_has_run' => (bool) $timestamp,
+            'cron_is_stale' => !$timestamp || time() - $timestamp > $alertHours * 3600,
+            'cron_alert_hours' => $alertHours,
+            'cron_last_run' => $timestamp ? $this->formatDateTime($lastRun, (int) $this->context->language->id) : '',
+            'cron_idle_for' => $timestamp ? $this->formatIdleTime($lastRun) : '',
+            'cron_source' => isset($result['source']) && $result['source'] === 'cli' ? 'CLI' : 'URL',
+            'cron_processed' => isset($result['processed']) ? (int) $result['processed'] : 0,
+            'cron_sent' => isset($result['sent']) ? (int) $result['sent'] : 0,
+            'cron_errors' => isset($result['errors']) ? (int) $result['errors'] : 0,
+            'cron_message' => isset($result['message']) ? (string) $result['message'] : '',
+        ));
+
+        return $this->display(__FILE__, 'views/templates/admin/cron_status.tpl');
     }
 
     /**
@@ -477,11 +550,52 @@ class AbandonedCartAdminNotifier extends Module
     /**
      * Process cron job - main method to scan abandoned carts
      *
+     * Every real run (not a dry run) is recorded, even when it stops early, so the configuration
+     * page can show when the cron last ran.
+     *
      * @param bool $dryRun List the carts that would be notified without sending or logging anything
      * @param int $timeBudget Seconds after which no new cart is started (0 = no limit)
+     * @param string $source 'web' or 'cli'
      * @return array Statistics array with processed carts, sent emails, errors
      */
-    public function processCronJob($dryRun = false, $timeBudget = self::CRON_TIME_BUDGET)
+    public function processCronJob($dryRun = false, $timeBudget = self::CRON_TIME_BUDGET, $source = 'web')
+    {
+        $stats = $this->runCronJob($dryRun, $timeBudget);
+        if (!$dryRun) {
+            $this->recordCronRun($stats, $source);
+        }
+
+        return $stats;
+    }
+
+    /**
+     * @param array $stats
+     * @param string $source
+     * @return void
+     */
+    private function recordCronRun(array $stats, $source)
+    {
+        Configuration::updateValue(self::CONFIG_LAST_RUN, date('Y-m-d H:i:s'));
+        Configuration::updateValue(self::CONFIG_LAST_RUN_RESULT, json_encode(array(
+            'source' => $source === 'cli' ? 'cli' : 'web',
+            'processed' => (int) $stats['processed'],
+            'sent' => (int) $stats['sent'],
+            'errors' => (int) $stats['errors'],
+            // Configuration strips tags; keep it short, recipient addresses stay out of it
+            'message' => Tools::substr(
+                implode(' | ', preg_replace('/Failed recipients: .*/', 'Failed recipients', $stats['error_messages'])),
+                0,
+                250
+            ),
+        )));
+    }
+
+    /**
+     * @param bool $dryRun
+     * @param int $timeBudget
+     * @return array
+     */
+    private function runCronJob($dryRun, $timeBudget)
     {
         $startTime = microtime(true);
         $stats = array(
