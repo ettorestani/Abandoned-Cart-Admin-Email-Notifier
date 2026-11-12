@@ -692,6 +692,7 @@ class AbandonedCartAdminNotifier extends Module
             'firstname' => $cartData['firstname'],
             'lastname' => $cartData['lastname'],
             'email' => $cartData['email'],
+            'phone' => $this->getCustomerPhone((int) $cartData['id_customer'], (int) $cart->id_address_delivery),
             'id_cart' => (int) $cartData['id_cart'],
             'date_upd' => $this->formatDateTime($cartData['date_upd'], (int) Configuration::get('PS_LANG_DEFAULT')),
             'idle_for' => $this->formatIdleTime($cartData['date_upd']),
@@ -741,6 +742,7 @@ class AbandonedCartAdminNotifier extends Module
             '{firstname}' => $this->sanitizeMailValue($data['firstname']),
             '{lastname}' => $this->sanitizeMailValue($data['lastname']),
             '{customer_email}' => $this->sanitizeMailValue($data['email']),
+            '{customer_phone}' => $data['phone'] !== '' ? $this->sanitizeMailValue($data['phone']) : $this->l('not available'),
             '{id_cart}' => (int) $data['id_cart'],
             '{date_upd}' => $this->sanitizeMailValue($data['date_upd']),
             '{idle_for}' => $this->sanitizeMailValue($data['idle_for']),
@@ -748,6 +750,38 @@ class AbandonedCartAdminNotifier extends Module
             '{product_rows_html}' => $rowsHtml,
             '{product_list_txt}' => $listTxt,
         );
+    }
+
+    /**
+     * Customer phone numbers, from the cart's delivery address or else the latest address
+     *
+     * @param int $idCustomer
+     * @param int $idAddressDelivery
+     * @return string Mobile and landline, separated by " / ", or an empty string
+     */
+    public function getCustomerPhone($idCustomer, $idAddressDelivery)
+    {
+        $row = Db::getInstance()->getRow('
+            SELECT a.phone, a.phone_mobile
+            FROM `' . _DB_PREFIX_ . 'address` a
+            WHERE a.id_customer = ' . (int) $idCustomer . '
+            AND a.deleted = 0
+            AND (a.phone <> \'\' OR a.phone_mobile <> \'\')
+            ORDER BY (a.id_address = ' . (int) $idAddressDelivery . ') DESC, a.date_upd DESC
+        ', false);
+        if (!$row) {
+            return '';
+        }
+
+        $phones = array();
+        foreach (array($row['phone_mobile'], $row['phone']) as $phone) {
+            $phone = trim((string) $phone);
+            if ($phone !== '' && !in_array($phone, $phones, true)) {
+                $phones[] = $phone;
+            }
+        }
+
+        return implode(' / ', $phones);
     }
 
     /**

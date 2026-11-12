@@ -4,6 +4,7 @@ CLIENTE
 - ID cliente: {id_customer}
 - Nome: {firstname} {lastname}
 - Email: {customer_email}
+- Telefono: {customer_phone}
 
 CARRELLO
 - ID carrello: {id_cart}

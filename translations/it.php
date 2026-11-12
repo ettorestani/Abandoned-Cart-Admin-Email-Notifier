@@ -42,6 +42,7 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_12d
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b428788686db0cf50ef6d322ee51f084'] = '%d ora';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_4e8d5e5492c42a5058d220efcac00228'] = '%d ore';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_cdca48ec5dde79b84b395c0c557bb290'] = '%d giorni';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b2f8489bbd55a4e9b9edbbbfe49edf70'] = 'non disponibile';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';
