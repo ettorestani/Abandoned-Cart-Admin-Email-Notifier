@@ -18,7 +18,7 @@ This module is provided "as is", without warranty of any kind, express or implie
 - Verify compatibility with your PrestaShop version and other modules
 - The author is **not responsible** for any damage, data loss, or issues caused by using this module
 
-**Use at your own risk.** For production environments, consider using [professional installation services](#-professional-services).
+**Use at your own risk.** For production environments, consider using [professional installation services](#professional-services).
 
 ---
 
@@ -46,6 +46,7 @@ This module is provided "as is", without warranty of any kind, express or implie
 - **Notification log** - paginated, with cart total, attempts and a link to the cart in the back office
 - **Cron job management** - secure URL with token protection, token regeneration, or command line execution
 - **Enable/disable switch** - quickly turn notifications on/off
+- **English and Italian** translations
 
 ### Security & Performance
 - **Secure cron execution** with random token authentication
@@ -71,7 +72,7 @@ This module is provided "as is", without warranty of any kind, express or implie
 3. Navigate to **Modules** > **Module Manager** > **Upload a module**
 4. Select the downloaded ZIP file
 5. Click **Configure** after installation
-6. Set up email recipients and cron job
+6. Set up email recipients and cron job, then press **Send a test email**
 
 ### Manual Installation
 
@@ -99,6 +100,12 @@ Access configuration via **Modules** > **Module Manager** > **Configure**
 | **Email Recipients** | Email addresses separated by comma, semicolon or new line |
 | **Inactivity threshold** | Hours without cart updates before it is considered abandoned (default 24) |
 | **Maximum cart age** | Days after which a cart is no longer notified (default 7, max 90) |
+| **Cron alert** | Hours without a cron run after which the configuration page shows a warning (default 48, max 720) |
+
+The configuration page also has:
+- **Cron status** - date, source (URL or command line) and counts of the last run, green while the cron runs, red after the alert delay
+- **Send a test email** - sends the notification with a sample cart to the saved recipients; nothing is logged
+- **Generate a new token** - replaces the cron token (update the URL on the server afterwards: the old one stops working)
 
 ### Email Recipients Format
 
@@ -110,11 +117,12 @@ admin@yourstore.com, manager@yourstore.com, sales@yourstore.com
 
 ### Notification Log
 
-The configuration page displays the last 50 notifications with:
-- Cart ID
+The configuration page lists the notifications, newest first, 20 per page, with:
+- Cart ID, linked to the cart in the back office
 - Customer name and email
+- Cart total when the notification was sent (since 1.2.0)
 - Date sent
-- Status (Success/Failed)
+- Status (Success/Failed) and number of attempts
 - Error message (if any)
 
 Use **Clear Log** to hide old entries (tracking data is preserved to prevent duplicate notifications).
@@ -133,11 +141,9 @@ https://yourstore.com/module/abandonedcartadminnotifier/cron?secure_token=YOUR_T
 
 ### Secure Token
 
-A unique secure token is generated during installation. This token protects the cron URL from unauthorized access.
+A random 64-character token is generated during installation. It protects the cron URL from unauthorized access: a wrong or missing token gets an HTTP 403 response.
 
-You can find the secure token:
-1. On the module configuration page
-2. In the database: `SELECT value FROM ps_configuration WHERE name = 'ACN_SECURE_TOKEN'`
+The token is shown on the module configuration page. **Generate a new token** replaces it, for example if the URL has been shared: update the cron job on the server with the new URL.
 
 ### Setting Up Cron
 
@@ -198,6 +204,7 @@ The cron returns a JSON response:
 ```json
 {
   "success": true,
+  "dry_run": false,
   "execution_time": "1.23s",
   "statistics": {
     "carts_processed": 5,
@@ -207,6 +214,8 @@ The cron returns a JSON response:
   "error_messages": []
 }
 ```
+
+With `dry_run=1` the response also contains `carts_to_notify`, the list of carts the next run would notify. Problems that stop a run (module disabled, no recipients, emails disabled in the shop, another run in progress, time limit reached) are reported in `error_messages`.
 
 ## Email Format
 
@@ -250,10 +259,11 @@ The total value is the cart total including taxes and shipping, as computed by P
 
 ### Cron not executing
 
-1. Verify secure token matches configuration
-2. Test cron URL in browser
-3. Check server cron logs (`/var/log/cron`)
-4. Run wget/curl command manually
+1. Check the **Cron status** panel on the configuration page: it shows when the cron last ran
+2. Verify the secure token matches the configuration (a wrong token returns HTTP 403)
+3. Test cron URL in browser
+4. Check server cron logs (`/var/log/cron`)
+5. Run wget/curl command manually
 
 ### Duplicate notifications
 
@@ -264,11 +274,11 @@ The total value is the cart total including taxes and shipping, as computed by P
 ### Cart not detected
 
 A cart must meet ALL these criteria:
-- Cart is linked to a customer account (`id_customer > 0`, guest accounts included) that is not deleted
-- Cart contains at least one product
+- Cart belongs to the shop the cron runs for and is linked to a customer account (`id_customer > 0`, guest accounts included) that is not deleted
+- Cart contains at least one product that still exists
 - No order exists for this cart, and the customer has not placed any order since the cart was last updated
 - Cart was last updated between the inactivity threshold (default 24 hours) and the maximum cart age (default 7 days) ago
-- No notification was successfully sent previously (failed ones are retried on the next run)
+- No notification was successfully sent previously (failed ones are retried on the next runs, up to 5 attempts)
 
 ## Compatibility
 
@@ -277,13 +287,13 @@ A cart must meet ALL these criteria:
 - PrestaShop 9.0 - 9.x (emails sent through Symfony Mailer)
 - PHP 7.1 - 8.4
 - Multistore: each shop's cron URL handles that shop's carts
-- All standard PrestaShop themes
 
 ## Security
 
-- CSRF protection via secure token
+- Cron protected by a random 64-character token, compared in constant time; the command line script refuses to run through the web server
+- Back office actions (save, clear log, test email, new token) are POST forms protected by PrestaShop's admin token
 - SQL injection prevention (pSQL, type casting)
-- XSS protection in templates (Smarty escape)
+- XSS protection in back office templates (Smarty escape) and in emails (customer and product data are stripped of markup and placeholders; only http(s) product links)
 - No direct file access (index.php protection)
 - Server-side input validation
 
@@ -333,7 +343,7 @@ Concurrent cron runs are prevented with a MySQL named lock.
 
 ## Upgrading
 
-Upload the new zip from **Modules** > **Module Manager** > **Upload a module**. PrestaShop runs the upgrade scripts in `upgrade/` automatically; notifications already sent are preserved.
+Upload the new zip from **Modules** > **Module Manager** > **Upload a module**. PrestaShop runs the upgrade scripts in `upgrade/` automatically; notifications already sent are preserved. Uploading does not delete files left by older versions: remove `README.md` from the module folder on the server if an older package placed it there.
 
 Upgrading from 1.0.0 to 1.1.0 adds a unique index on `id_cart` and the two new settings with their defaults. Upgrading to 1.2.0 adds the `attempts`, `cart_total` and `id_currency` columns and the cron alert setting (48 hours). Open the cron URL with `&dry_run=1` afterwards to check what the next run will send.
 
@@ -371,7 +381,7 @@ Thank you for your support!
 
 ---
 
-*Business using this module? I also offer [professional services](#-professional-services).*
+*Business using this module? I also offer [professional services](#professional-services).*
 
 ## Professional Services
 
@@ -395,6 +405,21 @@ This module is released under the [Academic Free License (AFL 3.0)](https://open
 - Website: https://www.ettorestani.it
 
 ## Changelog
+
+Full history in [CHANGELOG.md](CHANGELOG.md).
+
+### Version 1.2.0
+- New: PrestaShop 9 compatibility (prices formatted through the CLDR locale; `Tools::displayPrice()` is only the fallback for 1.7.0 - 1.7.5)
+- New: redesigned HTML and text email with product reference, unit price, line total and link, readable abandon date, idle time, customer phone and "shipping included" next to the total
+- New: cron status with a warning when the cron stops running, test email, token regeneration
+- New: paginated notification log with cart total, attempts and a link to the cart
+- New: command line execution (`cli/cron.php`)
+- Fix: a PHP error on one cart no longer blocks the following carts
+- Fix: no false "sent" when the shop is set to never send emails
+- Fix: web runs stop before the PHP time limit, so no duplicates after a killed run
+- Fix: failed notifications retried at most 5 times; carts with only deleted products skipped; only the current shop's carts selected
+- Change: uninstalling keeps the notification history
+- Security: clearing the log is a POST form
 
 ### Version 1.1.0
 - New: configurable inactivity threshold (default 24 hours) and maximum cart age (default 7 days)
