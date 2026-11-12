@@ -652,23 +652,6 @@ class AbandonedCartAdminNotifier extends Module
     }
 
     /**
-     * Get cart total amount formatted in the cart's own currency
-     *
-     * @param int $idCart Cart ID
-     * @return string Formatted cart total
-     */
-    private function getFormattedCartTotal($idCart)
-    {
-        $cart = new Cart((int) $idCart);
-        $currency = new Currency((int) $cart->id_currency);
-        if (!Validate::isLoadedObject($currency)) {
-            $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
-        }
-
-        return $this->formatPrice($cart->getOrderTotal(true, Cart::BOTH), $currency);
-    }
-
-    /**
      * Format an amount in the given currency, the same way the shop does
      *
      * PrestaShop 1.7.6+ formats through the CLDR locale; Tools::displayPrice() is deprecated
@@ -705,6 +688,75 @@ class AbandonedCartAdminNotifier extends Module
     }
 
     /**
+     * Collect the raw data shown in the notification for a cart
+     *
+     * @param array $cartData Row from getAbandonedCarts()
+     * @return array
+     */
+    public function getNotificationData(array $cartData)
+    {
+        $cart = new Cart((int) $cartData['id_cart']);
+        $currency = new Currency((int) $cart->id_currency);
+        if (!Validate::isLoadedObject($currency)) {
+            $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+        }
+
+        $products = array();
+        foreach ($this->getCartProducts((int) $cartData['id_cart']) as $product) {
+            $products[] = array(
+                'name' => $product['name'],
+                'quantity' => (int) $product['quantity'],
+            );
+        }
+
+        return array(
+            'id_customer' => (int) $cartData['id_customer'],
+            'firstname' => $cartData['firstname'],
+            'lastname' => $cartData['lastname'],
+            'email' => $cartData['email'],
+            'id_cart' => (int) $cartData['id_cart'],
+            'date_upd' => $cartData['date_upd'],
+            'total' => $this->formatPrice($cart->getOrderTotal(true, Cart::BOTH), $currency),
+            'products' => $products,
+        );
+    }
+
+    /**
+     * Turn notification data into Mail::Send() template vars, neutralizing every customer-controlled value
+     *
+     * @param array $data From getNotificationData()
+     * @return array
+     */
+    public function buildTemplateVars(array $data)
+    {
+        $rowsHtml = '';
+        $listTxt = '';
+        $cell = 'padding: 8px; border-bottom: 1px solid #eeeeee; vertical-align: top;';
+        foreach ($data['products'] as $product) {
+            $name = $this->sanitizeMailValue($product['name']);
+            $quantity = (int) $product['quantity'];
+
+            $rowsHtml .= '<tr>'
+                . '<td style="' . $cell . '">' . $name . '</td>'
+                . '<td style="' . $cell . ' text-align: center;">' . $quantity . '</td>'
+                . '</tr>';
+            $listTxt .= '- ' . $name . ' (' . $this->l('Quantity') . ': ' . $quantity . ")\n";
+        }
+
+        return array(
+            '{id_customer}' => (int) $data['id_customer'],
+            '{firstname}' => $this->sanitizeMailValue($data['firstname']),
+            '{lastname}' => $this->sanitizeMailValue($data['lastname']),
+            '{customer_email}' => $this->sanitizeMailValue($data['email']),
+            '{id_cart}' => (int) $data['id_cart'],
+            '{date_upd}' => $this->sanitizeMailValue($data['date_upd']),
+            '{total_amount}' => $this->sanitizeMailValue($data['total']),
+            '{product_rows_html}' => $rowsHtml,
+            '{product_list_txt}' => $listTxt,
+        );
+    }
+
+    /**
      * Send notification email for an abandoned cart
      *
      * @param array $cartData Cart and customer data
@@ -713,53 +765,59 @@ class AbandonedCartAdminNotifier extends Module
      */
     public function sendNotificationEmail($cartData, array $recipients)
     {
-        $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
-        $shopEmail = Configuration::get('PS_SHOP_EMAIL');
-        $shopName = Configuration::get('PS_SHOP_NAME');
-
-        $productList = '';
-        foreach ($this->getCartProducts((int) $cartData['id_cart']) as $product) {
-            $productList .= '- ' . $this->sanitizeMailValue($product['name'])
-                . ' (' . $this->l('Quantity') . ': ' . (int) $product['quantity'] . ")\n";
-        }
-
-        $templateVars = array(
-            '{id_customer}' => (int) $cartData['id_customer'],
-            '{firstname}' => $this->sanitizeMailValue($cartData['firstname']),
-            '{lastname}' => $this->sanitizeMailValue($cartData['lastname']),
-            '{customer_email}' => $this->sanitizeMailValue($cartData['email']),
-            '{id_cart}' => (int) $cartData['id_cart'],
-            '{date_upd}' => $this->sanitizeMailValue($cartData['date_upd']),
-            '{total_amount}' => $this->getFormattedCartTotal((int) $cartData['id_cart']),
-            '{product_list}' => $productList,
+        return $this->sendToRecipients(
+            $this->l('New abandoned cart'),
+            $this->buildTemplateVars($this->getNotificationData($cartData)),
+            $recipients
         );
+    }
 
-        // Send email to each recipient individually
+    /**
+     * Send the notification template to each recipient individually
+     *
+     * @param string $subject
+     * @param array $templateVars
+     * @param array $recipients
+     * @return array Recipients the email could not be sent to
+     */
+    private function sendToRecipients($subject, array $templateVars, array $recipients)
+    {
         $failedRecipients = array();
         foreach ($recipients as $toEmail) {
-            $result = Mail::Send(
-                $idLang,
-                'abandonedcart',
-                $this->l('New abandoned cart'),
-                $templateVars,
-                $toEmail,
-                null,
-                $shopEmail,
-                $shopName,
-                null,
-                null,
-                dirname(__FILE__) . '/mails/',
-                false,
-                null
-            );
-
-            if (!$result) {
+            if (!$this->sendMail($subject, $templateVars, $toEmail)) {
                 $this->log('Failed to send email to: ' . $toEmail, 3);
                 $failedRecipients[] = $toEmail;
             }
         }
 
         return $failedRecipients;
+    }
+
+    /**
+     * Send one email through PrestaShop (overridden by the test suite)
+     *
+     * @param string $subject
+     * @param array $templateVars
+     * @param string $toEmail
+     * @return bool
+     */
+    protected function sendMail($subject, array $templateVars, $toEmail)
+    {
+        return (bool) Mail::Send(
+            (int) Configuration::get('PS_LANG_DEFAULT'),
+            'abandonedcart',
+            $subject,
+            $templateVars,
+            $toEmail,
+            null,
+            Configuration::get('PS_SHOP_EMAIL'),
+            Configuration::get('PS_SHOP_NAME'),
+            null,
+            null,
+            dirname(__FILE__) . '/mails/',
+            false,
+            null
+        );
     }
 
     /**
@@ -771,7 +829,7 @@ class AbandonedCartAdminNotifier extends Module
      * @param string $value
      * @return string
      */
-    private function sanitizeMailValue($value)
+    public function sanitizeMailValue($value)
     {
         $value = (string) $value;
         do {
