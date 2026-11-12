@@ -1,10 +1,10 @@
 # Abandoned Cart Admin Email Notifier for PrestaShop
 
 [![Support via PayPal](https://img.shields.io/badge/Support-PayPal-blue?logo=paypal)](https://www.paypal.com/paypalme/ettorestani)
-[![PrestaShop](https://img.shields.io/badge/PrestaShop-1.7.x--8.x-blue.svg)](https://www.prestashop.com/)
-[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](https://github.com/ettorestani/Abandoned-Cart-Admin-Email-Notifier)
+[![PrestaShop](https://img.shields.io/badge/PrestaShop-1.7.x--9.x-blue.svg)](https://www.prestashop.com/)
+[![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](https://github.com/ettorestani/Abandoned-Cart-Admin-Email-Notifier)
 [![License](https://img.shields.io/badge/license-AFL%203.0-orange.svg)](https://opensource.org/licenses/AFL-3.0)
-[![PHP](https://img.shields.io/badge/php-7.2%2B-blue.svg)](https://www.php.net/)
+[![PHP](https://img.shields.io/badge/php-7.1--8.4-blue.svg)](https://www.php.net/)
 
 A PrestaShop module that sends email notifications to store administrators when a registered customer abandons their shopping cart. Keep track of potential sales and follow up with customers who didn't complete their purchase.
 
@@ -29,34 +29,36 @@ This module is provided "as is", without warranty of any kind, express or implie
 - **Maximum cart age** - older carts are ignored (default: 7 days), so the first run doesn't flood you with historic carts
 - **Customer carts only** - carts linked to a customer account (guest checkout accounts included), empty carts excluded
 - **Order verification** - excludes carts converted to orders and customers who ordered afterwards
-- **Duplicate prevention** - each cart triggers only one successful notification; failed ones are retried
+- **Duplicate prevention** - each cart triggers only one successful notification; failed ones are retried, up to 5 attempts
 
 ### Email Notifications
 - **Multiple recipients** - send to one or more email addresses
-- **Plain text format** - maximum compatibility with all email clients
+- **HTML and plain text** - table-based HTML in the PrestaShop mail style, with a matching text version
 - **Complete cart details:**
-  - Customer information (ID, name, email)
-  - Cart details (ID, abandonment date, total value)
-  - Full product list with quantities
+  - Customer information (ID, name, email, phone from the delivery or latest address)
+  - Cart details (ID, abandonment date in the shop's date format, how long it has been idle, total value)
+  - Product table with reference, quantity, unit price, line total and a link to the product page
+- **Test email** - send the notification with a sample cart from the configuration page
 
 ### Administration Panel
 - **Easy configuration** via PrestaShop back office
-- **Notification log** - view last 50 sent notifications with status
-- **Cron job management** - secure URL with token protection
+- **Cron status** - last run, its counts, and a warning when the cron has not run for 48 hours (configurable)
+- **Notification log** - paginated, with cart total, attempts and a link to the cart in the back office
+- **Cron job management** - secure URL with token protection, token regeneration, or command line execution
 - **Enable/disable switch** - quickly turn notifications on/off
 
 ### Security & Performance
 - **Secure cron execution** with random token authentication
 - **SQL injection protection** - all queries use PrestaShop's safe methods
 - **Optimized queries** with proper indexing
-- **Batch processing** - handles up to 100 carts per execution
+- **Batch processing** - handles up to 100 carts per execution, and a web run stops starting new carts after 240 s
 - **Concurrency lock** - overlapping cron runs cannot send duplicate emails
 - **Dry run mode** - preview which carts would be notified without sending anything
 
 ## Requirements
 
-- **PrestaShop:** 1.7.0.0 - 8.x
-- **PHP:** 7.1+
+- **PrestaShop:** 1.7.0.0 - 9.x (tested on 1.7.3.4, 8.2.9 and 9.1.5)
+- **PHP:** 7.1 - 8.4
 - **Cron job access** on your server
 - **SMTP configured** in PrestaShop for email sending
 
@@ -179,6 +181,16 @@ Append `&dry_run=1` to the cron URL to list the carts that would be notified on 
 https://yourstore.com/module/abandonedcartadminnotifier/cron?secure_token=YOUR_TOKEN&dry_run=1
 ```
 
+### Command Line
+
+If the server cron can run PHP directly, the same job runs without the token in the URL and without HTTP timeouts:
+
+```
+0 2 * * * php /path/to/shop/modules/abandonedcartadminnotifier/cli/cron.php
+```
+
+Use the PHP binary of the shop's version. `--dry-run` lists the carts without sending anything. The exit code is 0 on success, 1 when the run reported errors and 2 when it could not start. The script refuses to run through the web server.
+
 ### Cron Response
 
 The cron returns a JSON response:
@@ -198,36 +210,41 @@ The cron returns a JSON response:
 
 ## Email Format
 
-Notification emails include:
+Notification emails are sent in HTML and plain text. The text version:
 
 ```
 A new abandoned cart has been detected.
 
-CUSTOMER DETAILS:
+CUSTOMER
 - Customer ID: 123
 - Name: John Doe
 - Email: john@example.com
+- Phone: 333 1234567 / 080 1234567
 
-CART DETAILS:
+CART
 - Cart ID: 456
-- Abandoned Date: 2024-01-15 14:30:00
-- Total Value: €99.99
+- Abandoned date: 15/01/2024 14:30
+- Idle for: 20 hours
+- Total value: 99,99 €
 
-PRODUCTS IN CART:
-- Product Name 1 (Quantity: 2)
-- Product Name 2 (Quantity: 1)
+PRODUCTS IN CART
+- Product Name 1 (Ref. ABC-1)
+  Quantity: 2 x 40,00 € = 80,00 €
+  https://shop.example.com/category/product-name-1.html
 
 ---
 This is an automatic notification generated by the system.
 ```
+
+The total value is the cart total including taxes and shipping, as computed by PrestaShop.
 
 ## Troubleshooting
 
 ### Emails not being sent
 
 1. Verify **Enable Module** is ON
-2. Check email recipients are configured
-3. Test PrestaShop email settings (**Advanced Parameters** > **Email**)
+2. Check email recipients are configured, then use **Send a test email**
+3. Test PrestaShop email settings (**Advanced Parameters** > **Email**); the cron refuses to run when emails are set to never be sent
 4. Check PrestaShop logs (**Advanced Parameters** > **Logs**)
 5. Manually access cron URL and check JSON response
 
@@ -257,8 +274,9 @@ A cart must meet ALL these criteria:
 
 - PrestaShop 1.7.0 - 1.7.8
 - PrestaShop 8.0 - 8.x
-- PHP 7.2 - 8.2
-- Multistore compatible
+- PrestaShop 9.0 - 9.x (emails sent through Symfony Mailer)
+- PHP 7.1 - 8.4
+- Multistore: each shop's cron URL handles that shop's carts
 - All standard PrestaShop themes
 
 ## Security
@@ -283,6 +301,9 @@ Table: `ps_abandoned_cart_notifications`
 | date_sent | DATETIME | When notification was sent |
 | email_status | ENUM | 'success' or 'failed' |
 | error_message | TEXT | Error details if failed |
+| attempts | INT | Send attempts for this cart (since 1.2.0) |
+| cart_total | DECIMAL | Cart total when the notification was logged (since 1.2.0) |
+| id_currency | INT | Currency of cart_total (since 1.2.0) |
 | log_visible | TINYINT | Show in admin log (0/1) |
 | date_add | DATETIME | Record creation date |
 
@@ -295,15 +316,18 @@ Table: `ps_abandoned_cart_notifications`
 | ACN_SECURE_TOKEN | Cron security token |
 | ACN_MIN_CART_AGE_HOURS | Inactivity threshold in hours (default 24) |
 | ACN_MAX_CART_AGE_DAYS | Maximum cart age in days (default 7) |
+| ACN_CRON_ALERT_HOURS | Warn on the configuration page when the cron has not run for this many hours (default 48) |
+| ACN_LAST_RUN | Date of the last real cron run |
+| ACN_LAST_RUN_RESULT | Counts of the last real cron run (JSON) |
 
 ### Cart Selection Criteria
 
 A cart is considered "abandoned" when:
-1. `id_customer > 0` and the customer is not deleted (guest accounts included)
-2. The cart contains at least one product
+1. The cart belongs to the shop the cron runs for, `id_customer > 0` and the customer is not deleted (guest accounts included)
+2. The cart contains at least one product that still exists
 3. No corresponding order exists in `ps_orders`, and the customer has no order dated after the cart's `date_upd`
 4. `date_upd` is older than the inactivity threshold (default 24 hours) and newer than the maximum cart age (default 7 days) (older carts are never notified, so installing the module does not flood recipients with historic carts)
-5. No successful notification exists for this cart (failed notifications are retried while the cart is inside the window)
+5. No successful notification exists for this cart (failed notifications are retried while the cart is inside the window, at most 5 attempts in all)
 
 Concurrent cron runs are prevented with a MySQL named lock.
 
@@ -311,16 +335,15 @@ Concurrent cron runs are prevented with a MySQL named lock.
 
 Upload the new zip from **Modules** > **Module Manager** > **Upload a module**. PrestaShop runs the upgrade scripts in `upgrade/` automatically; notifications already sent are preserved.
 
-Upgrading from 1.0.0 to 1.1.0 adds a unique index on `id_cart` and the two new settings with their defaults. Open the cron URL with `&dry_run=1` afterwards to check what the next run will send.
+Upgrading from 1.0.0 to 1.1.0 adds a unique index on `id_cart` and the two new settings with their defaults. Upgrading to 1.2.0 adds the `attempts`, `cart_total` and `id_currency` columns and the cron alert setting (48 hours). Open the cron URL with `&dry_run=1` afterwards to check what the next run will send.
 
 ## Uninstallation
 
 ### Warning
 
-Uninstalling this module will **permanently delete**:
-- All notification log data
-- All module configuration settings
-- The `ps_abandoned_cart_notifications` database table
+Uninstalling this module deletes all module configuration settings, including the cron token.
+
+Since 1.2.0 the `ps_abandoned_cart_notifications` table is **kept**: it records which carts were already notified, so a reinstall does not notify them again. To remove it, drop the table by hand after uninstalling.
 
 ### Uninstall Procedure
 
