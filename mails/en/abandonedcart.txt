@@ -10,7 +10,7 @@ CART
 - Cart ID: {id_cart}
 - Abandoned date: {date_upd}
 - Idle for: {idle_for}
-- Total value: {total_amount}
+- Total value: {total_amount} (shipping included)
 
 PRODUCTS IN CART
 {product_list_txt}

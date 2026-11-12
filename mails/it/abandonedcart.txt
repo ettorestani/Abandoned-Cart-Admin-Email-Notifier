@@ -10,7 +10,7 @@ CARRELLO
 - ID carrello: {id_cart}
 - Data abbandono: {date_upd}
 - Fermo da: {idle_for}
-- Valore totale: {total_amount}
+- Valore totale: {total_amount} (spedizione inclusa)
 
 PRODOTTI NEL CARRELLO
 {product_list_txt}

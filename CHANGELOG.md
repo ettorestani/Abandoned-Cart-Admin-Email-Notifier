@@ -21,6 +21,7 @@ Same code for PrestaShop 1.7.0 – 9.x and PHP 7.1 – 8.4. Tested on 1.7.3.4 / 
 - Email redesigned in the PrestaShop mail style (HTML table layout, matching text version), with:
   - reference, unit price, line total and link for each product (prices from the cart, as the customer sees them);
   - abandon date in the shop's date format and how long the cart has been idle;
+  - "shipping included" next to the total value, which has always included shipping;
   - customer phone, from the delivery address or the latest address.
 - Configuration page:
   - cron status: last run, source (URL or CLI) and counts, with a red warning when the cron has not run for 48 hours (configurable);
