@@ -693,7 +693,8 @@ class AbandonedCartAdminNotifier extends Module
             'lastname' => $cartData['lastname'],
             'email' => $cartData['email'],
             'id_cart' => (int) $cartData['id_cart'],
-            'date_upd' => $cartData['date_upd'],
+            'date_upd' => $this->formatDateTime($cartData['date_upd'], (int) Configuration::get('PS_LANG_DEFAULT')),
+            'idle_for' => $this->formatIdleTime($cartData['date_upd']),
             'total' => $this->formatPrice($cart->getOrderTotal(true, Cart::BOTH), $currency),
             'products' => $products,
         );
@@ -742,10 +743,51 @@ class AbandonedCartAdminNotifier extends Module
             '{customer_email}' => $this->sanitizeMailValue($data['email']),
             '{id_cart}' => (int) $data['id_cart'],
             '{date_upd}' => $this->sanitizeMailValue($data['date_upd']),
+            '{idle_for}' => $this->sanitizeMailValue($data['idle_for']),
             '{total_amount}' => $this->sanitizeMailValue($data['total']),
             '{product_rows_html}' => $rowsHtml,
             '{product_list_txt}' => $listTxt,
         );
+    }
+
+    /**
+     * Date and time in the language's format, without seconds (e.g. 12/11/2026 14:30)
+     *
+     * @param string $date Y-m-d H:i:s
+     * @param int $idLang
+     * @return string
+     */
+    public function formatDateTime($date, $idLang)
+    {
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp) {
+            return (string) $date;
+        }
+
+        $language = new Language((int) $idLang);
+        $format = Validate::isLoadedObject($language) && $language->date_format_full
+            ? $language->date_format_full
+            : 'Y-m-d H:i:s';
+
+        return date(str_replace(':s', '', $format), $timestamp);
+    }
+
+    /**
+     * How long a cart has been idle: hours below two days, then days
+     *
+     * @param string $date Y-m-d H:i:s
+     * @param int|null $now Timestamp, defaults to the current time
+     * @return string
+     */
+    public function formatIdleTime($date, $now = null)
+    {
+        $seconds = ($now === null ? time() : (int) $now) - (int) strtotime((string) $date);
+        $hours = max(0, (int) floor($seconds / 3600));
+        if ($hours < 48) {
+            return sprintf($hours === 1 ? $this->l('%d hour') : $this->l('%d hours'), $hours);
+        }
+
+        return sprintf($this->l('%d days'), (int) floor($hours / 24));
     }
 
     /**

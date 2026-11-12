@@ -8,6 +8,7 @@ CUSTOMER
 CART
 - Cart ID: {id_cart}
 - Abandoned date: {date_upd}
+- Idle for: {idle_for}
 - Total value: {total_amount}
 
 PRODUCTS IN CART

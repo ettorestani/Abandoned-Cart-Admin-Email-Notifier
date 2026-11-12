@@ -39,6 +39,9 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_381
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_e47f82c4fd4322692e64eb943d461a93'] = 'Sei sicuro di voler disinstallare questo modulo? Le impostazioni verranno cancellate; lo storico delle notifiche viene conservato, così dopo una reinstallazione i carrelli già notificati non vengono notificati di nuovo.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_4b7a24375a430e619cec53c9b1715240'] = 'È stato generato un nuovo token di sicurezza: aggiorna l\'URL nel cron del server, quello vecchio non funziona più.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_12d3c7a4296542c62474856ec452c045'] = 'Rif.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b428788686db0cf50ef6d322ee51f084'] = '%d ora';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_4e8d5e5492c42a5058d220efcac00228'] = '%d ore';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_cdca48ec5dde79b84b395c0c557bb290'] = '%d giorni';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';
