@@ -447,6 +447,12 @@ class AbandonedCartAdminNotifier extends Module
             return $stats;
         }
 
+        if ($this->isMailDisabled()) {
+            // Mail::Send() returns true without sending: carts would be marked as notified for nothing
+            $stats['error_messages'][] = 'Email sending is disabled in the shop settings (Advanced Parameters > E-mail)';
+            return $stats;
+        }
+
         // Prevent concurrent runs from sending the same notification twice
         if (!$this->acquireLock()) {
             $stats['error_messages'][] = 'Another cron run is already in progress';
@@ -690,6 +696,16 @@ class AbandonedCartAdminNotifier extends Module
         } while ($value !== $previous);
 
         return str_replace(array('<', '>', '{', '}'), '', $value);
+    }
+
+    /**
+     * Whether the shop is set to never send emails (PS_MAIL_METHOD 3 on every supported version)
+     *
+     * @return bool
+     */
+    public function isMailDisabled()
+    {
+        return (int) Configuration::get('PS_MAIL_METHOD') === 3;
     }
 
     /**
