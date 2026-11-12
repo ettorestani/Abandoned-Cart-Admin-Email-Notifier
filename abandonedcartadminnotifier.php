@@ -517,7 +517,8 @@ class AbandonedCartAdminNotifier extends Module
             FROM `' . _DB_PREFIX_ . 'cart` c
             INNER JOIN `' . _DB_PREFIX_ . 'customer` cu ON c.id_customer = cu.id_customer
             LEFT JOIN `' . _DB_PREFIX_ . 'orders` o ON c.id_cart = o.id_cart
-            WHERE c.id_customer > 0
+            WHERE c.id_shop = ' . (int) Context::getContext()->shop->id . '
+            AND c.id_customer > 0
             AND cu.deleted = 0
             AND o.id_order IS NULL
             AND NOT EXISTS (
