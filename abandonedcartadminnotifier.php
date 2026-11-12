@@ -575,7 +575,43 @@ class AbandonedCartAdminNotifier extends Module
             $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
         }
 
-        return Tools::displayPrice($cart->getOrderTotal(true, Cart::BOTH), $currency);
+        return $this->formatPrice($cart->getOrderTotal(true, Cart::BOTH), $currency);
+    }
+
+    /**
+     * Format an amount in the given currency, the same way the shop does
+     *
+     * PrestaShop 1.7.6+ formats through the CLDR locale; Tools::displayPrice() is deprecated
+     * in 8.x and removed in 9.x, so it is only the fallback for 1.7.0-1.7.5.
+     *
+     * @param float $amount
+     * @param Currency $currency
+     * @return string
+     */
+    public function formatPrice($amount, Currency $currency)
+    {
+        $context = Context::getContext();
+
+        if (method_exists($context, 'getCurrentLocale')) {
+            try {
+                $locale = $context->getCurrentLocale();
+                if (!$locale && method_exists('Tools', 'getContextLocale')) {
+                    // No locale in the context (e.g. CLI): build it from the context language
+                    $locale = Tools::getContextLocale($context);
+                }
+                if ($locale) {
+                    return $locale->formatPrice($amount, $currency->iso_code);
+                }
+            } catch (Throwable $e) {
+                $this->log('Price formatting through the locale failed: ' . $e->getMessage(), 2);
+            }
+        }
+
+        if (method_exists('Tools', 'displayPrice')) {
+            return call_user_func(array('Tools', 'displayPrice'), $amount, $currency);
+        }
+
+        return number_format((float) $amount, 2, ',', '.') . ' ' . $currency->sign;
     }
 
     /**
