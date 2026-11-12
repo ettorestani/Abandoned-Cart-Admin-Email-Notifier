@@ -34,4 +34,10 @@
             {/if}
         </div>
     {/if}
+    <form method="post" action="{$form_action|escape:'html':'UTF-8'}" class="panel-footer">
+        <button type="submit" name="sendTestEmail" value="1" class="btn btn-default">
+            <i class="icon-envelope"></i> {l s='Send a test email' mod='abandonedcartadminnotifier'}
+        </button>
+        <span class="help-block">{l s='Sends the notification with a sample cart to the saved recipients. Nothing is logged.' mod='abandonedcartadminnotifier'}</span>
+    </form>
 </div>

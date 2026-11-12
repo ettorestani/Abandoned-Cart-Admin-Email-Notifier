@@ -197,6 +197,10 @@ class AbandonedCartAdminNotifier extends Module
             );
         }
 
+        if ($this->isPostRequest() && Tools::isSubmit('sendTestEmail')) {
+            $output .= $this->sendTestEmail();
+        }
+
         // Cron health first: a cron that stopped running must be noticed
         $output .= $this->renderCronStatus();
 
@@ -300,6 +304,92 @@ class AbandonedCartAdminNotifier extends Module
         Configuration::updateValue(self::CONFIG_CRON_ALERT_HOURS, (int) $alertHours);
 
         return $this->displayConfirmation($this->l('Configuration saved successfully.'));
+    }
+
+    /**
+     * Send the notification template with a sample cart to the saved recipients
+     *
+     * Nothing is logged: the sample cart does not exist.
+     *
+     * @return string HTML message
+     */
+    private function sendTestEmail()
+    {
+        $recipients = $this->parseEmailList(Configuration::get(self::CONFIG_EMAIL_RECIPIENTS));
+        if (empty($recipients)) {
+            return $this->displayError($this->l('Save at least one email recipient before sending a test email.'));
+        }
+        if ($this->isMailDisabled()) {
+            return $this->displayError($this->l('Email sending is disabled in Advanced Parameters > E-mail: no email can be sent.'));
+        }
+
+        try {
+            $failed = $this->sendToRecipients(
+                $this->l('Test email') . ': ' . $this->l('New abandoned cart'),
+                $this->buildTemplateVars($this->getSampleNotificationData()),
+                $recipients
+            );
+        } catch (Throwable $e) {
+            $this->log('Test email failed: ' . $e->getMessage(), 3);
+
+            return $this->displayError($this->l('The test email could not be sent:') . ' ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+        }
+
+        if (count($failed) === count($recipients)) {
+            return $this->displayError($this->l('The test email could not be sent. Check the email settings and the PrestaShop logs.'));
+        }
+        if ($failed) {
+            return $this->displayWarning(
+                $this->l('The test email could not be sent to:') . ' ' . htmlspecialchars(implode(', ', $failed), ENT_QUOTES, 'UTF-8')
+            );
+        }
+
+        return $this->displayConfirmation(sprintf(
+            $this->l('Test email sent to %d recipient(s). Check that it arrived, including the spam folder.'),
+            count($recipients)
+        ));
+    }
+
+    /**
+     * Notification data for a made-up cart, used by the test email
+     *
+     * @return array Same shape as getNotificationData()
+     */
+    public function getSampleNotificationData()
+    {
+        $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+        $shopUrl = $this->context->link->getPageLink('index', true);
+        $dateUpd = date('Y-m-d H:i:s', time() - 26 * 3600);
+
+        return array(
+            'id_customer' => 0,
+            'firstname' => 'Mario',
+            'lastname' => 'Rossi',
+            'email' => 'mario.rossi@example.com',
+            'phone' => '+39 000 0000000',
+            'id_cart' => 0,
+            'date_upd' => $this->formatDateTime($dateUpd, (int) Configuration::get('PS_LANG_DEFAULT')),
+            'idle_for' => $this->formatIdleTime($dateUpd),
+            'total' => $this->formatPrice(350, $currency),
+            'products' => array(
+                array(
+                    'name' => $this->l('Sample product') . ' 1',
+                    'reference' => 'SAMPLE-1',
+                    'quantity' => 2,
+                    'unit_price' => $this->formatPrice(100, $currency),
+                    'total' => $this->formatPrice(200, $currency),
+                    'url' => $shopUrl,
+                ),
+                array(
+                    'name' => $this->l('Sample product') . ' 2',
+                    'reference' => '',
+                    'quantity' => 1,
+                    'unit_price' => $this->formatPrice(150, $currency),
+                    'total' => $this->formatPrice(150, $currency),
+                    'url' => $shopUrl,
+                ),
+            ),
+        );
     }
 
     /**
@@ -498,6 +588,7 @@ class AbandonedCartAdminNotifier extends Module
             'cron_sent' => isset($result['sent']) ? (int) $result['sent'] : 0,
             'cron_errors' => isset($result['errors']) ? (int) $result['errors'] : 0,
             'cron_message' => isset($result['message']) ? (string) $result['message'] : '',
+            'form_action' => $this->getConfigPageUrl(),
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/cron_status.tpl');

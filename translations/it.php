@@ -46,6 +46,14 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b2f
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_3e9188cc25b1833cc8447f44283fbca2'] = 'L\'avviso del cron deve essere un numero intero di ore tra 1 e %d.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_0b8cfb334e4591440f2fe0c98364cdbe'] = 'Avviso cron fermo';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_d96eff16bfa2c8fa71a3daa010e7139b'] = 'Questa pagina mostra un avviso quando il cron non viene eseguito da questo numero di ore.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_bf8124566eba2839b281e51d94dba9c7'] = 'Salva almeno un destinatario prima di inviare una mail di prova.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_618694ffaa609272b1d914ff5d076bc6'] = 'L\'invio delle email è disattivato in Parametri avanzati > E-mail: nessuna mail può partire.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_d0bcd38c77602b5db10697502d93c9ec'] = 'Mail di prova';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_98fd6083c18cd3cc13e4abdc1952b2e8'] = 'Impossibile inviare la mail di prova:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_fe5d9c2413fd340ffdc658355128d97a'] = 'Impossibile inviare la mail di prova. Controlla le impostazioni email e i log di PrestaShop.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b4f793d5d1268077e27f3728d27aa8b6'] = 'Impossibile inviare la mail di prova a:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_2971d00a735c66a7e0c2f16250c34028'] = 'Mail di prova inviata a %d destinatari. Controlla che sia arrivata, anche nella cartella spam.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_242d4d1d32344372be1dd07824885b58'] = 'Prodotto di esempio';
 
 // cron_status.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_db6571bcf7b4ce1e130c767fe448326c'] = 'Notifiche inviate:';
@@ -56,6 +64,8 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_01f494aafd5151d666
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_f43eca6d515b448845ab4f0419161713'] = 'Il cron non risulta mai eseguito da quando è attivo questo controllo. Configuralo sul server con l\'URL indicato più sotto.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_2842912b9e48165ddc6645d021c9b3a3'] = 'Stato del cron';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_c48c42c966b3a35ad3b893e798bdec7c'] = 'Errori:';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_16186ead9220c2a4646402c69109cfa0'] = 'Invia una mail di prova';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_a1e952b729017fe2b09352606b47eb50'] = 'Invia la notifica con un carrello di esempio ai destinatari salvati. Non viene registrato nulla nel log.';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_fc6dfe4f8b07fc04c99e27425f780754'] = 'ID Carrello';
