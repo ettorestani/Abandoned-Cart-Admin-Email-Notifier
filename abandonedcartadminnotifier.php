@@ -899,7 +899,7 @@ class AbandonedCartAdminNotifier extends Module
     /**
      * Format an amount in the given currency, the same way the shop does
      *
-     * PrestaShop 1.7.6+ formats through the CLDR locale; Tools::displayPrice() is deprecated
+     * PrestaShop 1.7.6+ formats through the CLDR locale; Tools displayPrice is deprecated
      * in 8.x and removed in 9.x, so it is only the fallback for 1.7.0-1.7.5.
      *
      * @param float $amount
