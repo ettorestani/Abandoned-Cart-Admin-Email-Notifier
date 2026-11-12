@@ -13,7 +13,6 @@ $_MODULE = array();
 // abandonedcartadminnotifier.php
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_98338676cd37b4a3eb363707cb52c23e'] = 'Notifica email carrelli abbandonati';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_784f9ed55b8680c2d01ce2aec5653b2c'] = 'Invia notifiche email ad indirizzi email a tua scelta per notificare quando un utente registrato ha abbandonato un carrello.';
-$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b428623540056d1150c039933719721d'] = 'Sei sicuro di voler disinstallare questo modulo? Tutti i dati delle notifiche verranno persi.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_dcd58f8567054e075f1511a8a1c4bd46'] = 'Uno o più indirizzi email non sono validi.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_7575efc133b1cb9083cc3b8321001c47'] = 'Configurazione salvata con successo.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b2f72956ec49fe6bbbb4cf2214d4ce23'] = 'Log notifiche svuotato con successo.';
@@ -37,6 +36,7 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_f35
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_44fdec47036f482b68b748f9d786801b'] = 'giorni';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_694e8d1f2ee056f98ee488bdc4982d73'] = 'Quantità';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_3819ab38957ba7b2997999dfd52354cd'] = 'I carrelli inattivi da più tempo non vengono mai notificati. Le notifiche fallite vengono ritentate nelle esecuzioni successive, fino a %d tentativi, finché il carrello rientra in questa età.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_e47f82c4fd4322692e64eb943d461a93'] = 'Sei sicuro di voler disinstallare questo modulo? Le impostazioni verranno cancellate; lo storico delle notifiche viene conservato, così dopo una reinstallazione i carrelli già notificati non vengono notificati di nuovo.';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';

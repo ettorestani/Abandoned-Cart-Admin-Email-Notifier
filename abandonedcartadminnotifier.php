@@ -67,7 +67,7 @@ class AbandonedCartAdminNotifier extends Module
 
         $this->displayName = $this->l('Abandoned Cart Admin Email Notifier');
         $this->description = $this->l('Sends email notifications to store administrators when a registered cart is abandoned.');
-        $this->confirmUninstall = $this->l('Are you sure you want to uninstall this module? All notification data will be lost.');
+        $this->confirmUninstall = $this->l('Are you sure you want to uninstall this module? The settings will be deleted; the notification history is kept, so already notified carts are not notified again after a reinstall.');
     }
 
     /**
@@ -93,12 +93,14 @@ class AbandonedCartAdminNotifier extends Module
     /**
      * Module uninstallation
      *
+     * The notification table is kept on purpose: it records which carts were already notified,
+     * so a reinstall does not notify them again. To remove it, drop the table by hand.
+     *
      * @return bool
      */
     public function uninstall()
     {
-        return $this->uninstallDatabase()
-            && Configuration::deleteByName(self::CONFIG_EMAIL_RECIPIENTS)
+        return Configuration::deleteByName(self::CONFIG_EMAIL_RECIPIENTS)
             && Configuration::deleteByName(self::CONFIG_MODULE_ENABLED)
             && Configuration::deleteByName(self::CONFIG_SECURE_TOKEN)
             && Configuration::deleteByName(self::CONFIG_MIN_CART_AGE_HOURS)
@@ -150,20 +152,6 @@ class AbandonedCartAdminNotifier extends Module
         }
 
         return true;
-    }
-
-    /**
-     * Uninstall database tables
-     *
-     * @return bool
-     */
-    private function uninstallDatabase()
-    {
-        $sql_file = dirname(__FILE__) . '/sql/uninstall.php';
-        if (file_exists($sql_file)) {
-            return include($sql_file);
-        }
-        return false;
     }
 
     /**
