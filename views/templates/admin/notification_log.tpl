@@ -50,11 +50,11 @@
                     </tbody>
                 </table>
             </div>
-            <div class="panel-footer">
-                <a href="{$clear_log_url|escape:'html':'UTF-8'}" class="btn btn-default" onclick="return confirm('{l s='Are you sure you want to clear the notification log?' mod='abandonedcartadminnotifier' js=1}');">
+            <form method="post" action="{$form_action|escape:'html':'UTF-8'}" class="panel-footer" onsubmit="return confirm('{l s='Are you sure you want to clear the notification log?' mod='abandonedcartadminnotifier' js=1}');">
+                <button type="submit" name="clearNotificationLog" value="1" class="btn btn-default">
                     <i class="icon-trash"></i> {l s='Clear Log' mod='abandonedcartadminnotifier'}
-                </a>
-            </div>
+                </button>
+            </form>
         {else}
             <div class="alert alert-info">
                 {l s='No notifications sent yet.' mod='abandonedcartadminnotifier'}

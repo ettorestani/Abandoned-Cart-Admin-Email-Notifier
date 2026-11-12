@@ -168,8 +168,8 @@ class AbandonedCartAdminNotifier extends Module
             $output .= $this->processConfigurationForm();
         }
 
-        // Handle log clearing
-        if (Tools::isSubmit('clearNotificationLog')) {
+        // Handle log clearing: only on POST, a link must not change data
+        if ($this->isPostRequest() && Tools::isSubmit('clearNotificationLog')) {
             $output .= $this->clearNotificationLog();
         }
 
@@ -186,6 +186,27 @@ class AbandonedCartAdminNotifier extends Module
         $output .= $this->renderSupportSection();
 
         return $output;
+    }
+
+    /**
+     * Whether the current request is a POST (state-changing actions are never triggered by a GET link)
+     *
+     * @return bool
+     */
+    private function isPostRequest()
+    {
+        return isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'POST';
+    }
+
+    /**
+     * URL of this configuration page, with the admin token
+     *
+     * @return string
+     */
+    private function getConfigPageUrl()
+    {
+        return $this->context->link->getAdminLink('AdminModules', true)
+            . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
     }
 
     /**
@@ -409,8 +430,7 @@ class AbandonedCartAdminNotifier extends Module
 
         $this->context->smarty->assign(array(
             'notifications' => $notifications,
-            'clear_log_url' => $this->context->link->getAdminLink('AdminModules', true)
-                . '&configure=' . $this->name . '&clearNotificationLog=1',
+            'form_action' => $this->getConfigPageUrl(),
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/notification_log.tpl');
