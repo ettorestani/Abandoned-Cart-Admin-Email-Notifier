@@ -35,8 +35,8 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_73c
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_78ef000d6036f6f41f1dc958fcd189ac'] = 'Un carrello è considerato abbandonato quando non viene modificato da questo numero di ore. Sotto le 24 ore, esegui il cron ogni ora.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_f3512468528031dd831d6faf061d6481'] = 'Età massima del carrello';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_44fdec47036f482b68b748f9d786801b'] = 'giorni';
-$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_cb20af52476d52cd5cd45ba63b52aefd'] = 'I carrelli inattivi da più tempo non vengono mai notificati. Le notifiche fallite vengono ritentate finché il carrello non supera questa età.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_694e8d1f2ee056f98ee488bdc4982d73'] = 'Quantità';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_3819ab38957ba7b2997999dfd52354cd'] = 'I carrelli inattivi da più tempo non vengono mai notificati. Le notifiche fallite vengono ritentate nelle esecuzioni successive, fino a %d tentativi, finché il carrello rientra in questa età.';
 
 // notification_log.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';

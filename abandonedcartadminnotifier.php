@@ -43,6 +43,11 @@ class AbandonedCartAdminNotifier extends Module
     const CRON_TIME_BUDGET = 240;
 
     /**
+     * A notification that failed for every recipient is retried on later runs, at most this many times in all
+     */
+    const MAX_SEND_ATTEMPTS = 5;
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -77,6 +82,7 @@ class AbandonedCartAdminNotifier extends Module
 
         return parent::install()
             && $this->installDatabase()
+            && $this->ensureSchema()
             && Configuration::updateValue(self::CONFIG_EMAIL_RECIPIENTS, '')
             && Configuration::updateValue(self::CONFIG_MODULE_ENABLED, 1)
             && Configuration::updateValue(self::CONFIG_SECURE_TOKEN, $secureToken)
@@ -112,6 +118,38 @@ class AbandonedCartAdminNotifier extends Module
             return include($sql_file);
         }
         return false;
+    }
+
+    /**
+     * Add the columns introduced after 1.0.0 when they are missing
+     *
+     * Used by the upgrade scripts and by install(), since the table can be left over from an earlier install.
+     *
+     * @return bool
+     */
+    public function ensureSchema()
+    {
+        $db = Db::getInstance();
+        $table = '`' . _DB_PREFIX_ . 'abandoned_cart_notifications`';
+        $columns = array(
+            'attempts' => 'INT(10) UNSIGNED NOT NULL DEFAULT 1 AFTER `error_message`',
+        );
+
+        $existing = array();
+        $rows = $db->executeS('SHOW COLUMNS FROM ' . $table);
+        foreach (is_array($rows) ? $rows : array() as $row) {
+            $existing[] = $row['Field'];
+        }
+
+        foreach ($columns as $name => $definition) {
+            if (!in_array($name, $existing, true)
+                && !$db->execute('ALTER TABLE ' . $table . ' ADD COLUMN `' . $name . '` ' . $definition)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -316,7 +354,10 @@ class AbandonedCartAdminNotifier extends Module
                         'suffix' => $this->l('days'),
                         'class' => 'fixed-width-sm',
                         'required' => true,
-                        'desc' => $this->l('Carts idle for longer than this are never notified. Failed notifications are retried until the cart exceeds this age.'),
+                        'desc' => sprintf(
+                            $this->l('Carts idle for longer than this are never notified. Failed notifications are retried on the next runs, up to %d attempts, as long as the cart is within this age.'),
+                            self::MAX_SEND_ATTEMPTS
+                        ),
                     ),
                 ),
                 'submit' => array(
@@ -511,7 +552,8 @@ class AbandonedCartAdminNotifier extends Module
     /**
      * Get abandoned carts that meet notification criteria
      *
-     * Failed notifications are retried on each run until the cart leaves the age window.
+     * Failed notifications are retried on each run until the cart leaves the age window,
+     * at most MAX_SEND_ATTEMPTS times in all.
      *
      * @return array Array of abandoned cart data
      */
@@ -540,7 +582,8 @@ class AbandonedCartAdminNotifier extends Module
             AND o.id_order IS NULL
             AND NOT EXISTS (
                 SELECT 1 FROM `' . _DB_PREFIX_ . 'abandoned_cart_notifications` acn
-                WHERE acn.id_cart = c.id_cart AND acn.email_status = \'success\'
+                WHERE acn.id_cart = c.id_cart
+                AND (acn.email_status = \'success\' OR acn.attempts >= ' . (int) self::MAX_SEND_ATTEMPTS . ')
             )
             AND c.date_upd BETWEEN \'' . pSQL($minDate) . '\' AND \'' . pSQL($maxDate) . '\'
             AND EXISTS (
@@ -794,6 +837,7 @@ class AbandonedCartAdminNotifier extends Module
                 `date_sent` = VALUES(`date_sent`),
                 `email_status` = VALUES(`email_status`),
                 `error_message` = VALUES(`error_message`),
+                `attempts` = `attempts` + 1,
                 `log_visible` = 1
         ');
     }
