@@ -22,6 +22,13 @@
             <code>{$cron_schedule|escape:'html':'UTF-8'} wget -q -O /dev/null "{$cron_url|escape:'html':'UTF-8'}"</code>
         </div>
 
+        <div class="alert alert-info">
+            <p><strong>{l s='Alternative: command line' mod='abandonedcartadminnotifier'}</strong></p>
+            <p>{l s='If the server cron can run PHP directly, this command does the same without exposing the token in web server logs and without HTTP timeouts. Use the same PHP version as the shop.' mod='abandonedcartadminnotifier'}</p>
+            <code>{$cron_schedule|escape:'html':'UTF-8'} {$cli_command|escape:'html':'UTF-8'}</code>
+            <p class="help-block">{l s='Add --dry-run to list the carts that would be notified without sending anything.' mod='abandonedcartadminnotifier'}</p>
+        </div>
+
         <div class="well">
             <p><strong>{l s='Secure Token:' mod='abandonedcartadminnotifier'}</strong></p>
             <code>{$secure_token|escape:'html':'UTF-8'}</code>

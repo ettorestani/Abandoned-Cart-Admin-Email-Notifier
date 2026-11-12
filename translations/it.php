@@ -93,6 +93,9 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_ccb5e2dd86fd5aab8983
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_8cbf9a47aaef27b9e011ec42c36bd775'] = 'Mantieni questo token segreto. Protegge il cron job da accessi non autorizzati.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_a1c374df47809abbfba0007b0d1813c5'] = 'L\'URL attuale del cron smetterà di funzionare finché non lo aggiorni sul server. Generare un nuovo token?';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_61f7a1d7a9496d2d8fb3df21d20afe1a'] = 'Genera un nuovo token';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_b4a9b1be5386a53c5dee426b73f3bbc8'] = 'In alternativa: riga di comando';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_8b6affe40ca260b1f6840d0e233265c4'] = 'Se il cron del server può eseguire PHP direttamente, questo comando fa lo stesso senza esporre il token nei log del server web e senza timeout HTTP. Usa la stessa versione di PHP del negozio.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_6fc26233be86049c0c76d2398855bcd2'] = 'Aggiungi --dry-run per elencare i carrelli che verrebbero notificati, senza inviare nulla.';
 
 // support.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>support_cc4132acc88c59e8c138f9717b257124'] = 'Supporta Questo Modulo';

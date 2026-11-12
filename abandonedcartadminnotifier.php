@@ -674,9 +674,35 @@ class AbandonedCartAdminNotifier extends Module
             'form_action' => $this->getConfigPageUrl(),
             // The cron must run at least as often as the threshold, or carts are notified late
             'cron_schedule' => $this->getMinCartAgeHours() < 24 ? '0 * * * *' : '0 2 * * *',
+            'cli_command' => 'php ' . _PS_MODULE_DIR_ . $this->name . '/cli/cron.php',
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/cron_info.tpl');
+    }
+
+    /**
+     * Complete the context that config/config.inc.php leaves partial on the command line
+     *
+     * Shop, language and link are already set there; cart prices and the mail also need
+     * a currency and a (guest) customer.
+     *
+     * @return void
+     */
+    public function initCliContext()
+    {
+        $context = Context::getContext();
+        if (!Validate::isLoadedObject($context->language)) {
+            $context->language = new Language((int) Configuration::get('PS_LANG_DEFAULT'));
+        }
+        if (!Validate::isLoadedObject($context->currency)) {
+            $context->currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+        }
+        if (!$context->customer) {
+            $context->customer = new Customer();
+        }
+        if (!$context->link) {
+            $context->link = new Link();
+        }
     }
 
     /**
