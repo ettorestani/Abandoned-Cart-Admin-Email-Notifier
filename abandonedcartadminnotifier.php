@@ -5,7 +5,7 @@
  * @author    Ettore Stani
  * @copyright 2024 Ettore Stani
  * @license   http://opensource.org/licenses/afl-3.0.php Academic Free License (AFL 3.0)
- * @version   1.1.0
+ * @version   1.2.0
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -68,7 +68,7 @@ class AbandonedCartAdminNotifier extends Module
     {
         $this->name = 'abandonedcartadminnotifier';
         $this->tab = 'administration';
-        $this->version = '1.1.0';
+        $this->version = '1.2.0';
         $this->author = 'Ettore Stani';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array(
