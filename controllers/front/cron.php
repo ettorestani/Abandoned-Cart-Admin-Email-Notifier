@@ -111,7 +111,7 @@ class AbandonedCartAdminNotifierCronModuleFrontController extends ModuleFrontCon
             }
 
             $this->respondJson($response);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             PrestaShopLogger::addLog(
                 '[AbandonedCartAdminNotifier] Cron exception: ' . $e->getMessage(),
                 3,

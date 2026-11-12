@@ -470,7 +470,7 @@ class AbandonedCartAdminNotifier extends Module
                         $stats['errors']++;
                         $stats['error_messages'][] = $errorMsg;
                     }
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     $errorMsg = 'Exception for cart ID ' . $cart['id_cart'] . ': ' . $e->getMessage();
                     $this->logNotification($cart['id_cart'], $cart['id_customer'], 'failed', $errorMsg);
                     $stats['errors']++;
