@@ -388,6 +388,7 @@ try {
     $expectedDate = date(str_replace(':s', '', $lang->date_format_full), strtotime('2026-11-12 14:30:00'));
     acnCheck('data nel formato della lingua, senza secondi', $module->formatDateTime('2026-11-12 14:30:59', $idLang) === $expectedDate, $module->formatDateTime('2026-11-12 14:30:59', $idLang));
     $now = strtotime('2026-11-12 12:00:00');
+    acnCheck('meno di un\'ora', $module->formatIdleTime('2026-11-12 11:30:00', $now) === $module->l('less than an hour'));
     acnCheck('fermo da 1 ora', $module->formatIdleTime('2026-11-12 11:00:00', $now) === sprintf($module->l('%d hour'), 1));
     acnCheck('fermo da 36 ore', $module->formatIdleTime('2026-11-11 00:00:00', $now) === sprintf($module->l('%d hours'), 36));
     acnCheck('fermo da 3 giorni', $module->formatIdleTime('2026-11-09 11:00:00', $now) === sprintf($module->l('%d days'), 3));

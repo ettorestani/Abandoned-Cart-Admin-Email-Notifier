@@ -54,6 +54,7 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_fe5
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_b4f793d5d1268077e27f3728d27aa8b6'] = 'Impossibile inviare la mail di prova a:';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_2971d00a735c66a7e0c2f16250c34028'] = 'Mail di prova inviata a %d destinatari. Controlla che sia arrivata, anche nella cartella spam.';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_242d4d1d32344372be1dd07824885b58'] = 'Prodotto di esempio';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>abandonedcartadminnotifier_3fb05790772d1f413c925f5df807b470'] = 'meno di un\'ora';
 
 // cron_status.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_db6571bcf7b4ce1e130c767fe448326c'] = 'Notifiche inviate:';

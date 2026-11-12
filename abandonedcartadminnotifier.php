@@ -1114,6 +1114,9 @@ class AbandonedCartAdminNotifier extends Module
     {
         $seconds = ($now === null ? time() : (int) $now) - (int) strtotime((string) $date);
         $hours = max(0, (int) floor($seconds / 3600));
+        if ($hours === 0) {
+            return $this->l('less than an hour');
+        }
         if ($hours < 48) {
             return sprintf($hours === 1 ? $this->l('%d hour') : $this->l('%d hours'), $hours);
         }
