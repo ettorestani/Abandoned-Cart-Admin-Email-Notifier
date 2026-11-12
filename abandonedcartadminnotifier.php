@@ -625,33 +625,6 @@ class AbandonedCartAdminNotifier extends Module
     }
 
     /**
-     * Get products in a cart
-     *
-     * @param int $idCart Cart ID
-     * @return array Array of products with name and quantity
-     */
-    private function getCartProducts($idCart)
-    {
-        $db = Db::getInstance();
-        $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
-
-        $sql = '
-            SELECT
-                cp.quantity,
-                pl.name
-            FROM `' . _DB_PREFIX_ . 'cart_product` cp
-            INNER JOIN `' . _DB_PREFIX_ . 'product_lang` pl
-                ON cp.id_product = pl.id_product
-                AND pl.id_lang = ' . (int) $idLang . '
-                AND pl.id_shop = cp.id_shop
-            WHERE cp.id_cart = ' . (int) $idCart;
-
-        $products = $db->executeS($sql);
-
-        return $products ? $products : array();
-    }
-
-    /**
      * Format an amount in the given currency, the same way the shop does
      *
      * PrestaShop 1.7.6+ formats through the CLDR locale; Tools::displayPrice() is deprecated
@@ -701,11 +674,16 @@ class AbandonedCartAdminNotifier extends Module
             $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
         }
 
+        // Same prices as the cart page: tax included, the customer's group and specific prices
         $products = array();
-        foreach ($this->getCartProducts((int) $cartData['id_cart']) as $product) {
+        foreach ($cart->getProducts() as $product) {
             $products[] = array(
                 'name' => $product['name'],
-                'quantity' => (int) $product['quantity'],
+                'reference' => isset($product['reference']) ? $product['reference'] : '',
+                'quantity' => (int) $product['cart_quantity'],
+                'unit_price' => $this->formatPrice($product['price_wt'], $currency),
+                'total' => $this->formatPrice($product['total_wt'], $currency),
+                'url' => $this->getProductUrl($product, (int) $cart->id_lang, (int) $cart->id_shop),
             );
         }
 
@@ -734,13 +712,27 @@ class AbandonedCartAdminNotifier extends Module
         $cell = 'padding: 8px; border-bottom: 1px solid #eeeeee; vertical-align: top;';
         foreach ($data['products'] as $product) {
             $name = $this->sanitizeMailValue($product['name']);
+            $reference = $this->sanitizeMailValue($product['reference']);
             $quantity = (int) $product['quantity'];
+            $unitPrice = $this->sanitizeMailValue($product['unit_price']);
+            $total = $this->sanitizeMailValue($product['total']);
+            // Only http(s) links from Link::getProductLink(); quotes are encoded so the href cannot be closed
+            $url = preg_match('#^https?://#i', $product['url'])
+                ? str_replace(array('"', '<', '>', '{', '}', ' '), array('%22', '%3C', '%3E', '%7B', '%7D', '%20'), $product['url'])
+                : '';
 
             $rowsHtml .= '<tr>'
-                . '<td style="' . $cell . '">' . $name . '</td>'
+                . '<td style="' . $cell . '">'
+                . ($url !== '' ? '<a href="' . $url . '" style="color: #25b9d7; text-decoration: none;">' . $name . '</a>' : $name)
+                . ($reference !== '' ? '<br><span style="font-size: 12px; color: #777777;">' . $this->l('Ref.') . ' ' . $reference . '</span>' : '')
+                . '</td>'
                 . '<td style="' . $cell . ' text-align: center;">' . $quantity . '</td>'
+                . '<td style="' . $cell . ' text-align: right; white-space: nowrap;">' . $unitPrice . '</td>'
+                . '<td style="' . $cell . ' text-align: right; white-space: nowrap;">' . $total . '</td>'
                 . '</tr>';
-            $listTxt .= '- ' . $name . ' (' . $this->l('Quantity') . ': ' . $quantity . ")\n";
+            $listTxt .= '- ' . $name . ($reference !== '' ? ' (' . $this->l('Ref.') . ' ' . $reference . ')' : '') . "\n"
+                . '  ' . $this->l('Quantity') . ': ' . $quantity . ' x ' . $unitPrice . ' = ' . $total . "\n"
+                . ($url !== '' ? '  ' . $url . "\n" : '');
         }
 
         return array(
@@ -754,6 +746,33 @@ class AbandonedCartAdminNotifier extends Module
             '{product_rows_html}' => $rowsHtml,
             '{product_list_txt}' => $listTxt,
         );
+    }
+
+    /**
+     * Public URL of a cart product, or an empty string if it cannot be built
+     *
+     * @param array $product Row from Cart::getProducts()
+     * @param int $idLang
+     * @param int $idShop
+     * @return string
+     */
+    private function getProductUrl(array $product, $idLang, $idShop)
+    {
+        try {
+            $link = $this->context->link ? $this->context->link : new Link();
+
+            return (string) $link->getProductLink(
+                (int) $product['id_product'],
+                isset($product['link_rewrite']) ? $product['link_rewrite'] : null,
+                isset($product['category']) ? $product['category'] : null,
+                null,
+                $idLang > 0 ? $idLang : null,
+                $idShop > 0 ? $idShop : null,
+                (int) $product['id_product_attribute']
+            );
+        } catch (Throwable $e) {
+            return '';
+        }
     }
 
     /**
