@@ -16,3 +16,6 @@
 *.tmp
 *.swp
 *~
+
+# Build output
+dist/
