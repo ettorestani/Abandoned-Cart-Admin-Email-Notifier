@@ -19,6 +19,8 @@ $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'abandoned_cart_notificati
     `email_status` ENUM("success", "failed") NOT NULL DEFAULT "success",
     `error_message` TEXT NULL,
     `attempts` INT(10) UNSIGNED NOT NULL DEFAULT 1,
+    `cart_total` DECIMAL(20,6) NULL DEFAULT NULL,
+    `id_currency` INT(10) UNSIGNED NULL DEFAULT NULL,
     `log_visible` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `date_add` DATETIME NOT NULL,
     PRIMARY KEY (`id_notification`),

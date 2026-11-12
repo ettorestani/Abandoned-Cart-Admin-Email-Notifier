@@ -46,6 +46,11 @@ class AbandonedCartAdminNotifier extends Module
     const MAX_CRON_ALERT_HOURS = 720;
 
     /**
+     * Notification log rows per page on the configuration page
+     */
+    const LOG_PAGE_SIZE = 20;
+
+    /**
      * Seconds after which a web run stops starting new carts, safely below the cron controller's
      * 300 s time limit: a run killed mid-cart would resend that cart's emails on the next run
      */
@@ -145,6 +150,8 @@ class AbandonedCartAdminNotifier extends Module
         $table = '`' . _DB_PREFIX_ . 'abandoned_cart_notifications`';
         $columns = array(
             'attempts' => 'INT(10) UNSIGNED NOT NULL DEFAULT 1 AFTER `error_message`',
+            'cart_total' => 'DECIMAL(20,6) NULL DEFAULT NULL AFTER `attempts`',
+            'id_currency' => 'INT(10) UNSIGNED NULL DEFAULT NULL AFTER `cart_total`',
         );
 
         $existing = array();
@@ -497,25 +504,59 @@ class AbandonedCartAdminNotifier extends Module
     }
 
     /**
-     * Render notification log table
+     * Render notification log table, newest first, LOG_PAGE_SIZE rows per page
      *
      * @return string HTML table
      */
     private function renderNotificationLog()
     {
         $db = Db::getInstance();
+        $table = '`' . _DB_PREFIX_ . 'abandoned_cart_notifications`';
+
+        $total = (int) $db->getValue('SELECT COUNT(*) FROM ' . $table . ' WHERE log_visible = 1', false);
+        $pages = max(1, (int) ceil($total / self::LOG_PAGE_SIZE));
+        $page = min($pages, max(1, (int) Tools::getValue('acn_log_page', 1)));
+
         $notifications = $db->executeS('
             SELECT n.*, c.firstname, c.lastname, c.email
-            FROM `' . _DB_PREFIX_ . 'abandoned_cart_notifications` n
+            FROM ' . $table . ' n
             LEFT JOIN `' . _DB_PREFIX_ . 'customer` c ON n.id_customer = c.id_customer
             WHERE n.log_visible = 1
-            ORDER BY n.date_sent DESC
-            LIMIT 50
-        ');
+            ORDER BY n.date_sent DESC, n.id_notification DESC
+            LIMIT ' . (int) (($page - 1) * self::LOG_PAGE_SIZE) . ', ' . (int) self::LOG_PAGE_SIZE
+        );
+        $notifications = is_array($notifications) ? $notifications : array();
+
+        $idLang = (int) $this->context->language->id;
+        $currencies = array();
+        foreach ($notifications as &$notification) {
+            $notification['date_sent_display'] = $this->formatDateTime($notification['date_sent'], $idLang);
+            $notification['total_display'] = '';
+            if ($notification['cart_total'] !== null && (int) $notification['id_currency'] > 0) {
+                $idCurrency = (int) $notification['id_currency'];
+                if (!isset($currencies[$idCurrency])) {
+                    $currencies[$idCurrency] = new Currency($idCurrency);
+                }
+                if (Validate::isLoadedObject($currencies[$idCurrency])) {
+                    $notification['total_display'] = $this->formatPrice($notification['cart_total'], $currencies[$idCurrency]);
+                }
+            }
+            $notification['cart_url'] = $this->context->link->getAdminLink(
+                'AdminCarts',
+                true,
+                array(),
+                array('id_cart' => (int) $notification['id_cart'], 'viewcart' => 1)
+            );
+        }
+        unset($notification);
 
         $this->context->smarty->assign(array(
             'notifications' => $notifications,
             'form_action' => $this->getConfigPageUrl(),
+            'log_total' => $total,
+            'log_page' => $page,
+            'log_pages' => $pages,
+            'log_page_url' => $this->getConfigPageUrl() . '&acn_log_page=',
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/notification_log.tpl');
@@ -1117,14 +1158,29 @@ class AbandonedCartAdminNotifier extends Module
         $status = $status === 'success' ? 'success' : 'failed';
         $error = $errorMessage === null ? 'NULL' : '\'' . pSQL($errorMessage) . '\'';
 
+        // Cart total at notification time, for the log
+        $total = 'NULL';
+        $idCurrency = 'NULL';
+        try {
+            $cart = new Cart((int) $idCart);
+            if (Validate::isLoadedObject($cart)) {
+                $total = number_format((float) $cart->getOrderTotal(true, Cart::BOTH), 6, '.', '');
+                $idCurrency = (string) (int) $cart->id_currency;
+            }
+        } catch (Throwable $e) {
+            $this->log('Cart total for the log failed, cart ID ' . (int) $idCart . ': ' . $e->getMessage(), 2);
+        }
+
         return Db::getInstance()->execute('
             INSERT INTO `' . _DB_PREFIX_ . 'abandoned_cart_notifications`
-                (`id_cart`, `id_customer`, `date_sent`, `email_status`, `error_message`, `log_visible`, `date_add`)
-            VALUES (' . (int) $idCart . ', ' . (int) $idCustomer . ', \'' . pSQL($now) . '\', \'' . $status . '\', ' . $error . ', 1, \'' . pSQL($now) . '\')
+                (`id_cart`, `id_customer`, `date_sent`, `email_status`, `error_message`, `cart_total`, `id_currency`, `log_visible`, `date_add`)
+            VALUES (' . (int) $idCart . ', ' . (int) $idCustomer . ', \'' . pSQL($now) . '\', \'' . $status . '\', ' . $error . ', ' . $total . ', ' . $idCurrency . ', 1, \'' . pSQL($now) . '\')
             ON DUPLICATE KEY UPDATE
                 `date_sent` = VALUES(`date_sent`),
                 `email_status` = VALUES(`email_status`),
                 `error_message` = VALUES(`error_message`),
+                `cart_total` = VALUES(`cart_total`),
+                `id_currency` = VALUES(`id_currency`),
                 `attempts` = `attempts` + 1,
                 `log_visible` = 1
         ');

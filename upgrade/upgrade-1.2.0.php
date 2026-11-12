@@ -1,6 +1,6 @@
 <?php
 /**
- * Upgrade to 1.2.0: new notification log columns (attempts) and cron alert delay (default 48 hours)
+ * Upgrade to 1.2.0: new notification log columns (attempts, cart total) and cron alert delay (default 48 hours)
  *
  * @author    Ettore Stani
  * @copyright 2024 Ettore Stani

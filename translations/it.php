@@ -58,7 +58,6 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_2842912b9e48165ddc
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_status_c48c42c966b3a35ad3b893e798bdec7c'] = 'Errori:';
 
 // notification_log.tpl
-$_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_124c201983f2fd5b55ebca56aadc15ec'] = 'Log Notifiche (Ultime 50)';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_fc6dfe4f8b07fc04c99e27425f780754'] = 'ID Carrello';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_ce26601dac0dea138b7295f02b7620a7'] = 'Cliente';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_54945fdafec2c65f0f5561d65b165f1a'] = 'Email Cliente';
@@ -70,6 +69,10 @@ $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_d7c8c85bf79bb
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_a896972c5ead75944f2abae7515875a6'] = 'Pulisci Log';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_09ed8e19b684b2e2567d21ae353c52d2'] = 'Sei sicuro di voler svuotare il log delle notifiche?';
 $_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_b17d625f8eac7a5758c9b4538019404f'] = 'Nessuna notifica inviata ancora.';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_d180ce34170e0cf009303f216ec4a250'] = 'Log notifiche';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_ae9a134243362e66fef28a6b2e8a77c4'] = 'Totale carrello';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_7ba3b8236d48d4f4c5ec03c3fe6b75a9'] = 'Tentativi';
+$_MODULE['<{abandonedcartadminnotifier}prestashop>notification_log_57c1fee9db05c07a96c99d9260d38d6d'] = 'Vedi carrello';
 
 // cron_info.tpl
 $_MODULE['<{abandonedcartadminnotifier}prestashop>cron_info_85555d9856619e3943be6c3fa21211cd'] = 'Configurazione Cron Job';
